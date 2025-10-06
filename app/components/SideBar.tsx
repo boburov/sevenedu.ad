@@ -13,13 +13,30 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import logo from "../image/logo.png";
 
 const SideBar = () => {
   const pathname = usePathname();
+  const router = useRouter();
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  const handleLogout = () => {
+    // Local ma'lumotlarni tozalaymiz
+    localStorage.clear();
+    sessionStorage.clear();
+
+    // Cookie’lar bo‘lsa, ularni ham tozalash (faqat browserdan kirganda)
+    document.cookie.split(";").forEach((c) => {
+      document.cookie = c
+        .replace(/^ +/, "")
+        .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
+    });
+
+    // Login sahifasiga yo‘naltiramiz
+    router.push("/login");
+  };
 
   const navLinks = [
     { label: "Bosh Sahifa", href: "/", icon: Home },
@@ -134,7 +151,10 @@ const SideBar = () => {
                 <Settings size={18} />
                 <span className="text-sm">Sozlamalar</span>
               </Link>
-              <button className="flex items-center gap-3 px-4 py-2 rounded-lg text-white/70 hover:text-red-400 hover:bg-gray-700/50 transition-colors w-full">
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-3 px-4 py-2 rounded-lg text-white/70 hover:text-red-400 hover:bg-gray-700/50 transition-colors w-full"
+              >
                 <LogOut size={18} />
                 <span className="text-sm">Chiqish</span>
               </button>
