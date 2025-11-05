@@ -9,7 +9,6 @@ import {
   Settings,
   User,
   LogOut,
-  ChevronRight,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -51,22 +50,12 @@ const SideBar = () => {
     { label: "Dars Qo'shish", href: "/lessons", icon: PlusSquare },
     { label: "Qayta joylashtrish", href: "/relocation", icon: Replace },
     { label: "Savol Qo'shish", href: "/sentence-puzzle", icon: BookA },
+    { label: "O'quvchiga kurs qoshish", href: "/addmember", icon: PlusSquare }
   ];
 
   return (
     <>
-      {/* Collapse Toggle Button */}
-      <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className={`fixed top-6 z-50 bg-gradient-to-r from-blue-600 to-blue-500 text-white p-2 rounded-full shadow-lg transition-all duration-300 hover:from-blue-700 hover:to-blue-600 ${
-          isCollapsed ? "left-4" : "left-[390px]"
-        }`}
-      >
-        <ChevronRight
-          className={`transition-transform ${isCollapsed ? "rotate-180" : ""}`}
-          size={20}
-        />
-      </button>
+  
 
       <aside
         className={`fixed top-0 left-0 h-screen p-6 

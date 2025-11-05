@@ -1,81 +1,127 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Mail, Lock, LogIn } from "lucide-react";
 
-const allowedCredentials = [
-  { email: "sevenedu.founder@gmail.com", password: "sevenedu.founder.777" },
-  { email: "sevenedu.admin@gmail.com", password: "sevenedu.admin.2022" },
-];
-
-const LoginPage = () => {
+const Page = () => {
   const router = useRouter();
+
+  // Hardcoded admin data (sen bergan JSON)
+  const ADMIN = {
+    name: "Admin",
+    surname: "Admin",
+    email: "sevenedu.main@gmail.com",
+    role: "ADMIN",
+    password: "12345678",
+  };
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleLogin = () => {
-    // allowedCredentials ichida email+password juftligini tekshiradi
-    const found = allowedCredentials.some(
-      (c) => c.email === email.trim() && c.password === password
-    );
-
-    if (found) {
-      // localStorage ga saqlash olib tashlandi (so'roving bo'yicha)
-      router.push("/");
-    } else {
-      alert("Email yoki parol noto‘g‘ri!");
+  // Agar localda user bo'lsa avtomatik /home ga yo'naltir
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem("user");
+      if (stored) {
+        // optional: validatsiya qilish
+        const parsed = JSON.parse(stored);
+        if (parsed && parsed.email) {
+          router.push("/");
+        }
+      }
+    } catch {
+      // nada
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const inputEmail = (email || "").trim();
+    const inputPassword = (password || "").trim();
+
+    setTimeout(() => {
+      if (
+        inputEmail.toLowerCase() === ADMIN.email.toLowerCase() &&
+        inputPassword === ADMIN.password
+      ) {
+        // Saqlashga chiqiladigan user ob'ekti
+        const userToStore = {
+          name: ADMIN.name,
+          surname: ADMIN.surname,
+          email: ADMIN.email,
+          role: ADMIN.role,
+          // token yoki session id o'rniga oddiy flag
+          isAuthenticated: true,
+          loggedAt: new Date().toISOString(),
+        };
+
+        try {
+          localStorage.setItem("user", JSON.stringify(userToStore));
+        } catch (err) {
+          console.error("localStorage error:", err);
+        }
+
+        // Redirect to home
+        router.push("/home");
+      } else {
+        setError("Email yoki parol notoʻgʻri.");
+      }
+      setLoading(false);
+    }, 400); // kichik "fake" delay UX uchun
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600">
-      <div className="bg-white/90 backdrop-blur-md p-8 rounded-2xl shadow-2xl w-full max-w-sm space-y-6">
-        <div className="flex flex-col items-center gap-2">
-          <LogIn className="w-10 h-10 text-indigo-600" />
-          <h2 className="text-2xl font-bold text-center text-gray-800">
-            Kirish
-          </h2>
-        </div>
-
-        <div className="space-y-4">
-          {/* Email input */}
-          <div className="flex items-center border border-gray-300 rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-indigo-400 transition">
-            <Mail className="w-5 h-5 text-gray-400 mr-2" />
-            <input
-              type="email"
-              placeholder="Email"
-              className="w-full outline-none bg-transparent text-black"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-          </div>
-
-          {/* Password input */}
-          <div className="flex items-center border border-gray-300 rounded-lg px-3 py-2 focus-within:ring-2 focus-within:ring-indigo-400 transition">
-            <Lock className="w-5 h-5 text-gray-400 mr-2" />
-            <input
-              type="password"
-              placeholder="Parol"
-              className="w-full outline-none bg-transparent text-black"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-          </div>
-        </div>
-
-        <button
-          onClick={handleLogin}
-          className="w-full bg-indigo-600 text-white font-medium py-2 rounded-lg hover:bg-indigo-700 transition shadow-md flex items-center justify-center gap-2"
-        >
-          <LogIn className="w-5 h-5" />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-400">
+      <div className="bg-white/20 backdrop-blur-lg shadow-xl rounded-3xl w-96 p-8 flex flex-col items-center gap-6 border border-white/30">
+        <h1 className="text-white text-3xl font-semibold tracking-wide mb-2">
           Kirish
-        </button>
+        </h1>
+        <p className="text-white/80 text-sm mb-4 text-center">
+          Xush kelibsiz! Iltimos, akkauntingizga kiring.
+        </p>
 
-        <p className="text-center text-sm text-gray-500">
-          Hisobingiz yo‘qmi?{" "}
-          <a href="#" className="text-indigo-600 hover:underline font-medium">
-            Ro‘yxatdan o‘tish
+        <form className="w-full flex flex-col gap-5" onSubmit={handleSubmit}>
+          <input
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            placeholder="Email"
+            className="px-4 py-3 rounded-2xl bg-white/70 focus:bg-white focus:ring-2 focus:ring-blue-500 text-gray-700 placeholder:text-gray-400 outline-none transition-all duration-200"
+            autoComplete="off"
+          />
+          <input
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            type="password"
+            placeholder="Parol"
+            className="px-4 py-3 rounded-2xl bg-white/70 focus:bg-white focus:ring-2 focus:ring-blue-500 text-gray-700 placeholder:text-gray-400 outline-none transition-all duration-200"
+            autoComplete="off"
+          />
+
+          <button
+            type="submit"
+            disabled={loading}
+            className="mt-2 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-2xl transition-all duration-300 shadow-md hover:shadow-blue-400/50 disabled:opacity-60"
+          >
+            {loading ? "Kirish..." : "Kirish"}
+          </button>
+        </form>
+
+        {error && <p className="text-red-300 text-sm">{error}</p>}
+
+        <p className="text-white/80 text-sm mt-4">
+          Hisobingiz yoʻqmi?{" "}
+          <a
+            href="#"
+            className="text-white font-semibold hover:underline hover:text-blue-200 transition"
+          >
+            Roʻyxatdan oʻting
           </a>
         </p>
       </div>
@@ -83,4 +129,4 @@ const LoginPage = () => {
   );
 };
 
-export default LoginPage;
+export default Page;

@@ -13,6 +13,7 @@ import {
   GraduationCap,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface User {
   id: string;
@@ -26,10 +27,29 @@ const Page = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const router = useRouter();
 
   const toggleMenu = (id: string) => {
     setOpenMenuId(openMenuId === id ? null : id);
   };
+
+  const handleUserClick = (userId: string) => {
+    router.push(`/user/${userId}`);
+  };
+
+  // Tashqariga bosganda menuni yopish
+  useEffect(() => {
+    const handleClickOutside = () => {
+      if (openMenuId) {
+        setOpenMenuId(null);
+      }
+    };
+
+    document.addEventListener("click", handleClickOutside);
+    return () => {
+      document.removeEventListener("click", handleClickOutside);
+    };
+  }, [openMenuId]);
 
   useEffect(() => {
     getAllUser()
@@ -41,13 +61,12 @@ const Page = () => {
       });
   }, []);
 
-
   const filteredUsers = users.filter((user) =>
     user.email.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-6">
+    <div className="container mx-auto px-4 py-8 space-y-6 min-h-screen">
       <div className="relative max-w-md mx-auto">
         <Search className="absolute left-3 top-3 text-gray-400 w-5 h-5" />
         <input
@@ -64,10 +83,11 @@ const Page = () => {
         {filteredUsers.map((user) => (
           <div
             key={user.id}
-            className="relative rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-lg shadow-md hover:shadow-xl transition duration-300 p-6"
+            className="relative rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-lg shadow-md hover:shadow-xl transition duration-300 p-6 cursor-pointer"
+            onClick={() => handleUserClick(user.id)}
           >
             <div className="flex justify-between items-start">
-              <div>
+              <div className="flex-1">
                 <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
                   <UserIcon className="w-5 h-5 text-blue-500" />
                   {user.name} {user.surname}
@@ -81,34 +101,46 @@ const Page = () => {
 
               {/* Ellipsis Menu Button */}
               <button
-                className="text-gray-500 hover:text-gray-700"
-                onClick={() => toggleMenu(user.id)}
+                className="text-gray-500 hover:text-gray-700 ml-2 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  toggleMenu(user.id);
+                }}
               >
-                <EllipsisVertical className="w-6 h-6" />
+                <EllipsisVertical className="w-5 h-5" />
               </button>
             </div>
 
             {/* Tooltip Dropdown Menu */}
             {openMenuId === user.id && (
-              <ul className="absolute top-12 right-4 z-50 bg-white border border-gray-200 rounded-xl shadow-lg w-44 text-sm font-medium text-gray-700 divide-y overflow-hidden">
-                <li className="p-3 hover:bg-gray-100 flex items-center gap-2 cursor-pointer">
-                  <BadgeInfo className="w-4 h-4" /> {`Ma'lumotlar`}
-                </li>
-                <li className="p-3 hover:bg-gray-100 flex items-center gap-2 cursor-pointer">
-                  <MessageSquare className="w-4 h-4" /> SMS jo&#39;natish
-                </li>
-                <li>
-                  <Link
-                    className="p-3 hover:bg-gray-100 flex items-center gap-2 cursor-pointer"
-                    href={"addmember/" + user.email}
+              <div 
+                className="absolute top-14 right-2 z-50"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <ul className="bg-white border border-gray-200 rounded-xl shadow-lg w-44 text-sm font-medium text-gray-700 divide-y overflow-hidden">
+                  <li 
+                    className="p-3 hover:bg-gray-100 flex items-center gap-2 cursor-pointer transition-colors"
+                    onClick={() => handleUserClick(user.id)}
                   >
-                    <GraduationCap className="w-4 h-4" /> Kursga {`qo'shish`}
-                  </Link>
-                </li>
-                <li className="p-3 hover:bg-gray-100 flex items-center gap-2 cursor-pointer text-red-500">
-                  <Trash2 className="w-4 h-4" /> O‘chirish
-                </li>
-              </ul>
+                    <BadgeInfo className="w-4 h-4" /> {`Ma'lumotlar`}
+                  </li>
+                  <li className="p-3 hover:bg-gray-100 flex items-center gap-2 cursor-pointer transition-colors">
+                    <MessageSquare className="w-4 h-4" /> SMS jo{'’'}natish
+                  </li>
+                  <li>
+                    <Link
+                      className="p-3 hover:bg-gray-100 flex items-center gap-2 cursor-pointer transition-colors block"
+                      href={"addmember/" + user.email}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <GraduationCap className="w-4 h-4" /> Kursga {`qo'shish`}
+                    </Link>
+                  </li>
+                  <li className="p-3 hover:bg-gray-100 flex items-center gap-2 cursor-pointer text-red-500 transition-colors">
+                    <Trash2 className="w-4 h-4" /> O{'’'}chirish
+                  </li>
+                </ul>
+              </div>
             )}
           </div>
         ))}
