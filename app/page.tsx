@@ -34,7 +34,7 @@ const Page = () => {
   };
 
   const handleUserClick = (userId: string) => {
-    router.push(`/user/${userId}`);
+    router.push(`/users/${userId}`);
   };
 
   // Tashqariga bosganda menuni yopish
