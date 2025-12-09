@@ -1,11 +1,10 @@
-
 const main_url = {
   auth: "auth",
   course: "courses",
   quiz: "quizs",
   quession: "quessions",
-  user: "user"
-}
+  user: "user",
+};
 
 const apiEndpoins = {
   // Home

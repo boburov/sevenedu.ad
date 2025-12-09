@@ -54,16 +54,16 @@ const Page = () => {
         // getUserById orqali user ma'lumotlarini olish
         const userRes = await getUserById(userId);
         console.log("User ma'lumotlari:", userRes);
-        
+
         // API response strukturasi qanday ekanligiga qarab
         const userData = userRes.data || userRes;
-        
+
         if (userData && userData.email) {
           setUser({
             id: userData.id || userId,
             email: userData.email,
             name: userData.name || "Ism mavjud emas",
-            surname: userData.surname || "Familiya mavjud emas"
+            surname: userData.surname || "Familiya mavjud emas",
           });
         } else {
           toast.error("Foydalanuvchi ma'lumotlarida email topilmadi");
@@ -226,11 +226,9 @@ const Page = () => {
               className="rounded-2xl border border-gray-200 bg-white shadow-md hover:shadow-lg transition-all duration-300 p-5 space-y-4"
             >
               <div className="relative h-40 rounded-xl overflow-hidden">
-                <Image
+                <img
                   src={course.thumbnail || "/api/placeholder/400/200"}
                   alt={course.name}
-                  layout="fill"
-                  objectFit="cover"
                   onError={(e) => {
                     e.currentTarget.src = "/api/placeholder/400/200";
                   }}
@@ -276,7 +274,8 @@ const Page = () => {
 
                   {selectedSubscription === "MONTHLY" && course.price && (
                     <p className="text-xs text-gray-500 text-center mt-2">
-                      Oylik to&apos;lov: {Math.round(course.price / 12).toLocaleString()} so&apos;m
+                      Oylik to&apos;lov:{" "}
+                      {Math.round(course.price / 12).toLocaleString()} so&apos;m
                     </p>
                   )}
                 </div>

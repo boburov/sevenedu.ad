@@ -17,7 +17,7 @@ interface CourseType {
   goal: string;
   shortName: string;
   thumbnail: string;
-  lessons: { id: string, isVisible: boolean }[];
+  lessons: { id: string; isVisible: boolean }[];
 }
 
 const CoursesPage = () => {
@@ -57,7 +57,8 @@ const CoursesPage = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !goal || !shortName) return alert("Barcha maydonlarni to‘ldiring");
+    if (!title || !goal || !shortName)
+      return alert("Barcha maydonlarni to‘ldiring");
 
     const formData = new FormData();
     if (thumbnail) formData.append("file", thumbnail);
@@ -81,7 +82,11 @@ const CoursesPage = () => {
     setTitle(c.title);
     setGoal(c.goal);
     setShortName(c.shortName);
-    setPreview(c.thumbnail?.startsWith("/images") ? c.thumbnail : `/images/${c.thumbnail}`);
+    setPreview(
+      c.thumbnail?.startsWith("/images")
+        ? c.thumbnail
+        : `/images/${c.thumbnail}`
+    );
   };
 
   const handleDelete = async (id: string) => {
@@ -103,7 +108,13 @@ const CoursesPage = () => {
           <label htmlFor="file" className="cursor-pointer">
             <div className="border-2 border-dashed p-4 rounded-lg text-center hover:bg-white/5 transition">
               {preview ? (
-                <Image src={preview} alt="Preview" width={400} height={160} className="w-full h-40 object-cover rounded-md" />
+                <img
+                  src={preview}
+                  alt="Preview"
+                  width={400}
+                  height={160}
+                  className="w-full h-40 object-cover rounded-md"
+                />
               ) : (
                 <>
                   <FileUp className="w-16 h-16 mx-auto text-white/70" />
@@ -149,7 +160,9 @@ const CoursesPage = () => {
           </button>
         </form>
 
-        <h2 className="text-xl mt-6 mb-2 font-semibold text-white/80">📚 Mavjud Kategoriyalar</h2>
+        <h2 className="text-xl mt-6 mb-2 font-semibold text-white/80">
+          📚 Mavjud Kategoriyalar
+        </h2>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {course.map((c) => (
@@ -158,7 +171,7 @@ const CoursesPage = () => {
               className="glass p-4 rounded-2xl backdrop-blur-md bg-white/10 shadow-lg hover:scale-[1.02] transition space-y-3"
             >
               <Link href={`courses/${c.id}`}>
-                <Image
+                <img
                   src={c.thumbnail}
                   alt={c.title}
                   width={400}
@@ -166,14 +179,24 @@ const CoursesPage = () => {
                   className="w-full h-36 object-cover rounded-xl"
                 />
               </Link>
-              <h3 className="text-lg font-semibold">{c.shortName}: {c.title}</h3>
+              <h3 className="text-lg font-semibold">
+                {c.shortName}: {c.title}
+              </h3>
               <p className="text-sm text-white/60">{c.goal}</p>
-              <p className="text-sm text-white/50">Darslar soni: {c.lessons.filter(d => d.isVisible).length}</p>
+              <p className="text-sm text-white/50">
+                Darslar soni: {c.lessons.filter((d) => d.isVisible).length}
+              </p>
               <div className="flex justify-between pt-2">
-                <button onClick={() => handleEdit(c)} className="flex items-center gap-1 text-indigo-400 hover:text-indigo-200">
+                <button
+                  onClick={() => handleEdit(c)}
+                  className="flex items-center gap-1 text-indigo-400 hover:text-indigo-200"
+                >
                   <Pencil size={18} /> Tahrirlash
                 </button>
-                <button onClick={() => handleDelete(c.id)} className="flex items-center gap-1 text-red-400 hover:text-red-200">
+                <button
+                  onClick={() => handleDelete(c.id)}
+                  className="flex items-center gap-1 text-red-400 hover:text-red-200"
+                >
                   <Trash size={18} /> O‘chirish
                 </button>
               </div>

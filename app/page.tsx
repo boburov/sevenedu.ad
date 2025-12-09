@@ -20,7 +20,7 @@ interface User {
   name: string;
   email: string;
   surname: string;
-  password?: string; 
+  password?: string;
 }
 
 const Page = () => {
@@ -96,7 +96,9 @@ const Page = () => {
                   <Mail className="w-4 h-4 text-gray-400" />
                   {user.email}
                 </p>
-                <p className="text-sm text-gray-500 mt-1 break-all">ID: {user.id}</p>
+                <p className="text-sm text-gray-500 mt-1 break-all">
+                  ID: {user.id}
+                </p>
               </div>
 
               {/* Ellipsis Menu Button */}
@@ -113,19 +115,19 @@ const Page = () => {
 
             {/* Tooltip Dropdown Menu */}
             {openMenuId === user.id && (
-              <div 
+              <div
                 className="absolute top-14 right-2 z-50"
                 onClick={(e) => e.stopPropagation()}
               >
                 <ul className="bg-white border border-gray-200 rounded-xl shadow-lg w-44 text-sm font-medium text-gray-700 divide-y overflow-hidden">
-                  <li 
+                  <li
                     className="p-3 hover:bg-gray-100 flex items-center gap-2 cursor-pointer transition-colors"
                     onClick={() => handleUserClick(user.id)}
                   >
                     <BadgeInfo className="w-4 h-4" /> {`Ma'lumotlar`}
                   </li>
                   <li className="p-3 hover:bg-gray-100 flex items-center gap-2 cursor-pointer transition-colors">
-                    <MessageSquare className="w-4 h-4" /> SMS jo{'’'}natish
+                    <MessageSquare className="w-4 h-4" /> SMS jo{"’"}natish
                   </li>
                   <li>
                     <Link
@@ -137,7 +139,7 @@ const Page = () => {
                     </Link>
                   </li>
                   <li className="p-3 hover:bg-gray-100 flex items-center gap-2 cursor-pointer text-red-500 transition-colors">
-                    <Trash2 className="w-4 h-4" /> O{'’'}chirish
+                    <Trash2 className="w-4 h-4" /> O{"’"}chirish
                   </li>
                 </ul>
               </div>
