@@ -10,15 +10,13 @@ import { Trash, Pencil, BookPlus, ArrowUp } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
-
-
 interface CourseType {
   id: string;
   title: string;
   goal: string;
   shortName: string;
   thumbnail: string;
-  lessons: { id: string, isVisible: boolean }[];
+  lessons: { id: string; isVisible: boolean }[];
 }
 
 const DictionaryPage = () => {
@@ -48,7 +46,12 @@ const DictionaryPage = () => {
 
   const handleEdit = (c: CourseType) => {
     setEditingId(c.id);
-    setEditData({ title: c.title, goal: c.goal, shortName: c.shortName, file: null });
+    setEditData({
+      title: c.title,
+      goal: c.goal,
+      shortName: c.shortName,
+      file: null,
+    });
   };
 
   const handleUpdateSubmit = async () => {
@@ -85,33 +88,46 @@ const DictionaryPage = () => {
       {editingId && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50">
           <div className="bg-[#1a1b2f] text-white rounded-xl p-6 shadow-2xl w-full max-w-lg border border-purple-500/30">
-            <h2 className="text-2xl font-bold mb-4 text-purple-400">Kursni tahrirlash</h2>
+            <h2 className="text-2xl font-bold mb-4 text-purple-400">
+              Kursni tahrirlash
+            </h2>
 
             <div className="space-y-3">
               <input
                 type="text"
                 placeholder="Sarlavha"
                 value={editData.title}
-                onChange={(e) => setEditData({ ...editData, title: e.target.value })}
+                onChange={(e) =>
+                  setEditData({ ...editData, title: e.target.value })
+                }
                 className="w-full p-2 rounded-md bg-[#2a2b3d] text-white border border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-600"
               />
               <input
                 type="text"
                 placeholder="Maqsad"
                 value={editData.goal}
-                onChange={(e) => setEditData({ ...editData, goal: e.target.value })}
+                onChange={(e) =>
+                  setEditData({ ...editData, goal: e.target.value })
+                }
                 className="w-full p-2 rounded-md bg-[#2a2b3d] text-white border border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-600"
               />
               <input
                 type="text"
                 placeholder="Qisqa nom"
                 value={editData.shortName}
-                onChange={(e) => setEditData({ ...editData, shortName: e.target.value })}
+                onChange={(e) =>
+                  setEditData({ ...editData, shortName: e.target.value })
+                }
                 className="w-full p-2 rounded-md bg-[#2a2b3d] text-white border border-purple-500 focus:outline-none focus:ring-2 focus:ring-purple-600"
               />
               <input
                 type="file"
-                onChange={(e) => setEditData({ ...editData, file: e.target.files?.[0] || null })}
+                onChange={(e) =>
+                  setEditData({
+                    ...editData,
+                    file: e.target.files?.[0] || null,
+                  })
+                }
                 className="w-full text-sm text-purple-300"
               />
             </div>
@@ -141,7 +157,7 @@ const DictionaryPage = () => {
               key={c.id}
               className="bg-[#1a1b2f] border border-purple-800/40 rounded-2xl shadow-lg hover:scale-[1.015] transition transform duration-200 overflow-hidden flex flex-col"
             >
-              <Image
+              <img
                 src={c.thumbnail}
                 alt={c.title}
                 width={500}
@@ -150,10 +166,17 @@ const DictionaryPage = () => {
               />
               <div className="flex flex-col justify-between p-4 flex-1">
                 <div>
-                  <h3 className="text-base font-bold text-green-400">{c.shortName}: {c.title}</h3>
-                  <p className="text-sm text-purple-200 mt-1 line-clamp-2">{c.goal}</p>
+                  <h3 className="text-base font-bold text-green-400">
+                    {c.shortName}: {c.title}
+                  </h3>
+                  <p className="text-sm text-purple-200 mt-1 line-clamp-2">
+                    {c.goal}
+                  </p>
                   <p className="text-xs text-gray-400 mt-2">
-                    Darslar soni: <strong>{c.lessons.filter(d => d.isVisible === true).length}</strong>
+                    Darslar soni:{" "}
+                    <strong>
+                      {c.lessons.filter((d) => d.isVisible === true).length}
+                    </strong>
                   </p>
                 </div>
                 <div className="flex justify-between items-center mt-4">
@@ -182,10 +205,8 @@ const DictionaryPage = () => {
                 </div>
               </div>
             </div>
-          )
-        }
-        )}
-
+          );
+        })}
       </div>
 
       {showScrollTop && (
