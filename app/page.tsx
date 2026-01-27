@@ -54,6 +54,8 @@ const Page = () => {
   useEffect(() => {
     getAllUser()
       .then((res) => {
+        console.log(res.length);
+
         setUsers(res);
       })
       .catch((err) => {
@@ -80,12 +82,13 @@ const Page = () => {
 
       {/* User Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredUsers.map((user) => (
+        {filteredUsers.map((user, index) => (
           <div
             key={user.id}
             className="relative rounded-2xl border border-gray-200 bg-white/70 backdrop-blur-lg shadow-md hover:shadow-xl transition duration-300 p-6 cursor-pointer"
             onClick={() => handleUserClick(user.id)}
           >
+            {/* <span className="text-black absolute  top-0 right-5">{index}</span> */}
             <div className="flex justify-between items-start">
               <div className="flex-1">
                 <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
