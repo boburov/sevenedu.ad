@@ -22,7 +22,7 @@ export default function DictonaryPage() {
   const fetchVocabulary = useCallback(async () => {
     try {
       const res = await axios.get(
-        `https://sevenedu.store/dictonary/lesson/${lesson_id}`,
+        `https://api.sevenedu.store/dictonary/lesson/${lesson_id}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -56,7 +56,7 @@ export default function DictonaryPage() {
     setLoading(true);
     try {
       const res = await axios.post(
-        `https://sevenedu.store/dictonary/${lesson_id}/add`,
+        `https://api.sevenedu.store/dictonary/${lesson_id}/add`,
         { items: words },
         {
           headers: {

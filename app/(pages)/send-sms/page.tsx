@@ -58,7 +58,7 @@ const CreateNotificationForm = () => {
 
     setLoading(true);
     try {
-      await axios.post('https://sevenedu.store/notifications/create', payload, {
+      await axios.post('https://api.sevenedu.store/notifications/create', payload, {
         headers: {
           'Content-Type': 'application/json',
         },

@@ -146,7 +146,7 @@ export default function LessonsPage() {
       console.log("API ga yuboriladigan ma'lumot:", reorderData);
 
       // API ga so'rov yuborish
-      const response = await fetch(`https://sevenedu.store/courses/${course.id}/reorder-lessons`, {
+      const response = await fetch(`https://api.sevenedu.store/courses/${course.id}/reorder-lessons`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

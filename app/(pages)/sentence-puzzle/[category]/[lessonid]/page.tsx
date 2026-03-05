@@ -16,7 +16,7 @@ type Puzzle = {
 
 export default function SentencePuzzleAdminUI() {
   const { lessonid } = useParams();
-  const API_URL = "https://sevenedu.store"; // change if needed
+  const API_URL = "https://api.sevenedu.store"; // change if needed
   const api = axios.create({ baseURL: API_URL, timeout: 8000 });
 
   const [puzzles, setPuzzles] = useState<Puzzle[]>([]);
