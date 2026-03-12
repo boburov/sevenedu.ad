@@ -79,7 +79,7 @@ const DictionaryPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] py-10 px-6 text-white relative">
+    <div className="min-h-screen bg-linear-to-br from-[#0f0c29] via-[#302b63] to-[#24243e] py-10 px-6 text-white relative">
       {editingId && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center z-50">
           <div className="bg-[#1a1b2f] text-white rounded-xl p-6 shadow-2xl w-full max-w-lg border border-purple-500/30">
