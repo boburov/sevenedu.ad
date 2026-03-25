@@ -1,15 +1,9 @@
-/** @type {import('next').NextConfig} */
+// next.config.js
 const nextConfig = {
-  images: {
-    remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "seven.edu.s3.eu-north-1.amazonaws.com",
-        port: "",
-        pathname: "/**",
-      },
-    ],
-  },
+  async headers() {
+    return [{
+      source: "/(.*)",
+      headers: [{ key: "Content-Security-Policy", value: "frame-src 'self' https://player.vimeo.com;" }]
+    }];
+  }
 };
-
-module.exports = nextConfig;

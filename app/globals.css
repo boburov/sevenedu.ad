@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 body {
-  @apply bg-linear-to-br from-[#1e1e2f] to-[#15161d] text-white;
+  /* @apply bg-linear-to-br from-[#1e1e2f] to-[#15161d] text-white; */
 }
 
 .input {
