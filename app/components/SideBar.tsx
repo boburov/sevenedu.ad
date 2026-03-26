@@ -9,6 +9,7 @@ import {
   Settings,
   User,
   LogOut,
+  UserPlus,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -44,6 +45,7 @@ const SideBar = () => {
   const navLinks = [
     { label: "Bosh Sahifa", href: "/", icon: Home, group: "main" },
     { label: "Kurs Yaratish", href: "/courses", icon: PlusSquare, group: "main" },
+    { label: "Foydalanuvchi Yaratish", href: "/create-user", icon: UserPlus, group: "main" },
     { label: "Lug'at Qo'shish", href: "/dictionary", icon: BookA, group: "main" },
     { label: "Test Qo'shish", href: "/quiz", icon: PlusSquare, group: "main" },
     { label: "Foydalanuvchilarga Sms", href: "/send-sms", icon: MessageSquareIcon, group: "comms" },
@@ -57,7 +59,7 @@ const SideBar = () => {
   const commsLinks = navLinks.filter((l) => l.group === "comms");
 
   return (
-    <aside className="fixed top-0 left-0 h-screen w-[260px] bg-[#0a0a0a] border-r border-white/10 flex flex-col z-40 p-6 font-sans">
+    <aside className="fixed top-0 left-0 h-screen w-[300px] bg-[#0a0a0a] border-r border-white/10 flex flex-col z-40 p-6 font-sans">
       {/* Logo */}
       <Link href="/" className="flex items-center gap-3 mb-8">
         <LogoMark />
@@ -78,10 +80,10 @@ const SideBar = () => {
           PLATFORM
         </div>
         <ul className="space-y-1">
-          {mainLinks.map((link) => {
+          {mainLinks.map((link, index) => {
             const isActive = pathname === link.href;
             return (
-              <li key={link.href}>
+              <li key={index}>
                 <Link
                   href={link.href}
                   className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm transition-all duration-200

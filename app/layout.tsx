@@ -20,7 +20,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`pl-64`}
+        className={`pl-96`}
       >
         <AuthWrapper>
           <SideBar />
