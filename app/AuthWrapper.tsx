@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import SideBar from "./components/SideBar";
 import { ToastContainer } from "react-toastify";
+import { verifyAdminToken } from "./api/service/api";
 
 export default function AuthWrapper({
   children,
@@ -11,14 +12,46 @@ export default function AuthWrapper({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const [checked, setChecked] = useState(false);
 
   useEffect(() => {
-    const email = localStorage.getItem("email");
-    const password = localStorage.getItem("password");
-    if (!email || !password) {
-      router.push("/login");
+    if (pathname === "/login") {
+      setChecked(true);
+      return;
     }
-  }, [router]);
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      router.replace("/login");
+      return;
+    }
+
+    verifyAdminToken()
+      .then(() => setChecked(true))
+      .catch(() => {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        router.replace("/login");
+      });
+  }, [router, pathname]);
+
+  if (pathname === "/login") {
+    return (
+      <>
+        <ToastContainer />
+        {children}
+      </>
+    );
+  }
+
+  if (!checked) {
+    return (
+      <div className="min-h-screen flex items-center justify-center text-white/50 text-sm">
+        Yuklanmoqda...
+      </div>
+    );
+  }
 
   return (
     <>

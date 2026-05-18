@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import SideBar from "./components/SideBar";
-import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import AuthWrapper from "./AuthWrapper";
 
 export const metadata: Metadata = {
@@ -19,13 +18,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`pl-96`}
-      >
+      <body>
         <AuthWrapper>
-          <SideBar />
-          <ToastContainer />
-          {children}
+          <main className="md:pl-[300px] min-h-screen">{children}</main>
         </AuthWrapper>
       </body>
     </html>

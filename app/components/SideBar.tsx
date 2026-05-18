@@ -14,6 +14,7 @@ import {
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import logo from "../image/logo.png"
 
 const LogoMark = () => (
@@ -30,15 +31,26 @@ const Divider = () => (
 const SideBar = () => {
   const pathname = usePathname();
   const router = useRouter();
+  const [adminUser, setAdminUser] = useState<{
+    name?: string;
+    surname?: string;
+    email?: string;
+    role?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("user");
+      if (raw) setAdminUser(JSON.parse(raw));
+    } catch {
+      // ignore
+    }
+  }, []);
 
   const handleLogout = () => {
-    localStorage.clear();
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     sessionStorage.clear();
-    document.cookie.split(";").forEach((c) => {
-      document.cookie = c
-        .replace(/^ +/, "")
-        .replace(/=.*/, `=;expires=${new Date().toUTCString()};path=/`);
-    });
     router.push("/login");
   };
 
@@ -138,8 +150,14 @@ const SideBar = () => {
             <User size={18} />
           </div>
           <div className="min-w-0">
-            <div className="text-white text-sm font-medium truncate">Admin User</div>
-            <div className="text-white/40 text-xs">SUPER ADMIN</div>
+            <div className="text-white text-sm font-medium truncate">
+              {adminUser?.name
+                ? `${adminUser.name} ${adminUser.surname ?? ""}`.trim()
+                : "Admin User"}
+            </div>
+            <div className="text-white/40 text-xs truncate">
+              {adminUser?.role || "SUPER ADMIN"}
+            </div>
           </div>
         </div>
 

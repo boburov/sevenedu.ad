@@ -1,25 +1,68 @@
 import axios from "axios";
 import apiEndpoins from "../api.endpoin";
 
+export const API_BASE_URL =
+  process.env.NEXT_PUBLIC_API_URL || "https://api.sevenedu.store";
+
 const api = axios.create({
-  baseURL: "https://api.sevenedu.store",
+  baseURL: API_BASE_URL,
   timeout: 1000 * 60 * 50,
-  headers: {
-    "Content-Type": "multipart/form-data",
-  },
 });
 
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem("token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    if (token) config.headers.Authorization = `Bearer ${token}`;
+  }
+  if (config.data instanceof FormData) {
+    config.headers["Content-Type"] = "multipart/form-data";
+  } else if (!config.headers["Content-Type"]) {
+    config.headers["Content-Type"] = "application/json";
+  }
   return config;
 });
 
 api.interceptors.response.use(
   (res) => res,
-  (err) =>
-    Promise.reject(err.response?.data?.message || err.message || "Xatolik")
+  (err) => {
+    if (typeof window !== "undefined" && err?.response?.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      if (window.location.pathname !== "/login") {
+        window.location.href = "/login";
+      }
+    }
+    return Promise.reject(
+      err.response?.data?.message || err.message || "Xatolik"
+    );
+  }
 );
+
+export const adminLogin = async (email: string, password: string) => {
+  const res = await api.post("/auth/admin/login", { email, password });
+  return res.data as {
+    success: boolean;
+    token: string;
+    user: {
+      id: string;
+      name: string;
+      surname: string;
+      email: string;
+      role: string;
+      isAuthenticated: boolean;
+    };
+  };
+};
+
+export const verifyAdminToken = async () => {
+  const res = await api.get("/admin/me");
+  return res.data;
+};
+
+export const getAdminStats = async () => {
+  const res = await api.get("/admin/stats");
+  return res.data;
+};
 
 export const getAllUser = async () => {
   const res = await api.get(apiEndpoins.getUsers);

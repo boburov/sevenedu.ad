@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { LogIn, Mail, Lock, Eye, EyeOff } from "lucide-react";
-import axios from "axios";
+import { adminLogin } from "../api/service/api";
 
 const LogoMark = () => (
   <svg
@@ -49,20 +49,9 @@ const Page = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  // Agar allaqachon login qilingan bo'lsa → bosh sahifaga o'tkazish
   useEffect(() => {
-    const storedUser = localStorage.getItem("user");
-    if (storedUser) {
-      try {
-        const user = JSON.parse(storedUser);
-        if (user?.email) {
-          router.push("/");
-        }
-      } catch (e) {
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
-      }
-    }
+    const token = localStorage.getItem("token");
+    if (token) router.replace("/");
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -71,39 +60,17 @@ const Page = () => {
     setLoading(true);
 
     try {
-      const response = await axios.post(
-        "https://api.sevenedu.store/auth/admin/login",
-        { email, password },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          timeout: 10000, // 10 soniya
-        }
-      );
-
-      const { token, user } = response.data;
-
-      // Muvaffaqiyatli login
+      const { token, user } = await adminLogin(email, password);
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
-
-      // Bosh sahifaga o'tish
       router.push("/");
-      router.refresh(); // agar kerak bo'lsa
-
+      router.refresh();
     } catch (err: any) {
-      console.error("Login xatosi:", err);
-
-      if (err.response) {
-        // Serverdan kelgan xato
-        setError(err.response.data?.message || "Email yoki parol noto‘g‘ri");
-      } else if (err.request) {
-        // Serverga ulana olmadi
-        setError("Server bilan bog‘lanishda muammo. Internetni tekshiring.");
-      } else {
-        setError("Noma’lum xatolik yuz berdi. Qayta urinib ko‘ring.");
-      }
+      const msg =
+        typeof err === "string"
+          ? err
+          : err?.message || "Email yoki parol noto'g'ri";
+      setError(msg);
     } finally {
       setLoading(false);
     }
