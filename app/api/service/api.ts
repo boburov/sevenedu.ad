@@ -2,7 +2,7 @@ import axios from "axios";
 import apiEndpoins from "../api.endpoin";
 
 export const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "https://api.sevenedu.store";
+  process.env.NEXT_PUBLIC_API_URL || "https://api.sevenedu.org";
 
 const api = axios.create({
   baseURL: API_BASE_URL,

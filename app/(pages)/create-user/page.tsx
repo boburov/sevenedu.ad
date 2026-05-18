@@ -38,7 +38,7 @@ export default function CreateUserPage() {
         setLoading(true);
 
         try {
-            const res = await fetch("https://api.sevenedu.store/user/create", {
+            const res = await fetch("https://api.sevenedu.org/user/create", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({

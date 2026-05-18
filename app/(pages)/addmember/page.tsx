@@ -86,7 +86,7 @@ const Page = () => {
 
     setDeleteLoading(userId);
     try {
-      const res = await fetch("http://api.sevenedu.store/user/", {
+      const res = await fetch("https://api.sevenedu.org/user/", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
