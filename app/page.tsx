@@ -21,6 +21,9 @@ import {
   CircleDot,
   Layers,
   PlayCircle,
+  ShoppingCart,
+  Wallet,
+  UserCheck,
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -65,6 +68,21 @@ interface AdminStats {
     monthly: number;
     fullCharge: number;
     free: number;
+  };
+  sales: {
+    totalPaid: number;
+    payingUsers: number;
+    monthly: number;
+    fullCharge: number;
+    byCourse: {
+      id: string;
+      title: string;
+      shortName: string;
+      thumbnail: string;
+      monthly: number;
+      fullCharge: number;
+      total: number;
+    }[];
   };
   activity: { total: number; today: number; week: number };
   certificates: { total: number; today: number };
@@ -318,6 +336,103 @@ const Page = () => {
             icon={Award}
             tone="emerald"
           />
+        </div>
+      </section>
+
+      {/* Sales */}
+      <section>
+        <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">
+          Sotuvlar (sotib olingan kurslar)
+        </h2>
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+          <StatCard
+            label="Jami sotuvlar"
+            value={stats?.sales.totalPaid ?? 0}
+            sub="Pulli obunalar (Monthly + To'liq)"
+            icon={ShoppingCart}
+            tone="emerald"
+          />
+          <StatCard
+            label="Sotib olgan odamlar"
+            value={stats?.sales.payingUsers ?? 0}
+            sub="Kamida 1 ta pulli kurs olganlar"
+            icon={UserCheck}
+            tone="blue"
+          />
+          <StatCard
+            label="Oylik (Monthly)"
+            value={stats?.sales.monthly ?? 0}
+            sub="Oylik obunalar soni"
+            icon={Wallet}
+            tone="violet"
+          />
+          <StatCard
+            label="To'liq (Full)"
+            value={stats?.sales.fullCharge ?? 0}
+            sub="To'liq sotib olishlar"
+            icon={GraduationCap}
+            tone="amber"
+          />
+        </div>
+
+        {/* Per-course sales table */}
+        <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+          <div className="flex items-center gap-2 px-5 py-4 border-b border-gray-100">
+            <BookOpen className="w-5 h-5 text-sky-600" />
+            <h3 className="font-semibold text-gray-800">
+              Har bir kurs bo'yicha sotuvlar
+            </h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-500 bg-gray-50">
+                  <th className="px-5 py-3 font-medium">Kurs</th>
+                  <th className="px-5 py-3 font-medium text-center">Oylik</th>
+                  <th className="px-5 py-3 font-medium text-center">To'liq</th>
+                  <th className="px-5 py-3 font-medium text-center">
+                    Jami sotuvlar
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {(stats?.sales.byCourse ?? []).map((c) => (
+                  <tr
+                    key={c.id}
+                    className="border-t border-gray-50 hover:bg-gray-50/60 transition"
+                  >
+                    <td className="px-5 py-3">
+                      <p className="font-medium text-gray-800">{c.title}</p>
+                      {c.shortName && (
+                        <p className="text-xs text-gray-400">{c.shortName}</p>
+                      )}
+                    </td>
+                    <td className="px-5 py-3 text-center text-gray-700">
+                      {c.monthly}
+                    </td>
+                    <td className="px-5 py-3 text-center text-gray-700">
+                      {c.fullCharge}
+                    </td>
+                    <td className="px-5 py-3 text-center">
+                      <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
+                        {c.total}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {!stats?.sales.byCourse?.length && (
+                  <tr>
+                    <td
+                      colSpan={4}
+                      className="px-5 py-8 text-center text-gray-400"
+                    >
+                      Hozircha sotuvlar yo'q
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
         </div>
       </section>
 
