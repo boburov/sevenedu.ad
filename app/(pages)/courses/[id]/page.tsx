@@ -15,7 +15,11 @@ interface Lesson {
   videoUrl: string;
   isDemo: boolean;
   isVisible: boolean;
+  level?: string | null;
 }
+
+// CEFR darajalar
+const CEFR_LEVELS = ["A1", "A2", "B1", "B2", "C1", "C2"];
 
 // 🔒 maxsus kurs ID
 const SPECIAL_COURSE_ID = "a06d565b-1d61-4564-af5d-1ceb4cfb3f6b";
@@ -84,6 +88,7 @@ const LessonsPage = () => {
   const [videoUrl, setVideoUrl] = useState("");
   const [isDemo, setIsDemo] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
+  const [level, setLevel] = useState("");
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [file, setFile] = useState<File | null>(null);
@@ -135,6 +140,7 @@ const LessonsPage = () => {
     setFilePreview(null);
     setIsDemo(false);
     setIsVisible(true);
+    setLevel("");
     setEditMode(false);
     setEditId(null);
     setUploadProgress(0);
@@ -155,6 +161,7 @@ const LessonsPage = () => {
         formData.append("title", title.trim());
         formData.append("isDemo", String(isDemo));
         formData.append("isVisible", String(isVisible));
+        if (level) formData.append("level", level);
         if (videoUrl.trim()) formData.append("videoUrl", videoUrl.trim());
         if (file) formData.append("video", file);
         await updateLesson(editId, formData);
@@ -165,6 +172,7 @@ const LessonsPage = () => {
         formData.append("title", title.trim());
         formData.append("isDemo", String(isDemo));
         formData.append("isVisible", String(isVisible));
+        if (level) formData.append("level", level);
         formData.append("video", file);
         await api.post(`/courses/${courseId}/lesson`, formData, {
           onUploadProgress: (e: AxiosProgressEvent) => {
@@ -179,6 +187,7 @@ const LessonsPage = () => {
           title: title.trim(),
           videoUrl: videoUrl.trim(),
           isDemo,
+          ...(level ? { level } : {}),
         });
         alert("Dars qo‘shildi!");
       }
@@ -204,6 +213,7 @@ const LessonsPage = () => {
     setVideoUrl(lesson.videoUrl || "");
     setIsDemo(lesson.isDemo);
     setIsVisible(lesson.isVisible);
+    setLevel(lesson.level || "");
     setEditId(lesson.id);
     setEditMode(true);
     setFile(null);
@@ -286,6 +296,25 @@ const LessonsPage = () => {
             className="w-full px-4 py-3 border rounded focus:outline-none focus:ring-2 focus:ring-sky-500"
           />
 
+          {/* CEFR DARAJA */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Daraja (CEFR) — ixtiyoriy
+            </label>
+            <select
+              value={level}
+              onChange={(e) => setLevel(e.target.value)}
+              className="w-full px-4 py-3 border rounded focus:outline-none focus:ring-2 focus:ring-sky-500"
+            >
+              <option value="">— Darajasiz —</option>
+              {CEFR_LEVELS.map((lvl) => (
+                <option key={lvl} value={lvl}>
+                  {lvl}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <label className="flex gap-2 items-center">
             <input
               type="checkbox"
@@ -334,6 +363,11 @@ const LessonsPage = () => {
             <div className="flex items-start justify-between gap-2">
               <h4 className="font-bold text-sky-700">{lesson.title}</h4>
               <div className="flex gap-1 flex-shrink-0">
+                {lesson.level && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-sky-100 text-sky-700 font-semibold">
+                    {lesson.level}
+                  </span>
+                )}
                 {lesson.isDemo && (
                   <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
                     Demo
