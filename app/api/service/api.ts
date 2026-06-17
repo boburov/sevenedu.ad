@@ -127,6 +127,20 @@ export const getUserById = async (userId: string) => {
   }
 };
 
+// O'quvchi profil rasmini (pfp) yangilash — fayl VPS'ga yuklanadi.
+// FormData maydoni nomi serverdagi FileInterceptor('profilePic') bilan mos bo'lishi shart.
+export const updateUserProfilePic = async (userId: string, file: File) => {
+  const formData = new FormData();
+  formData.append("profilePic", file);
+  const res = await api.post(apiEndpoins.updateProfilePic(userId), formData);
+  return res.data;
+};
+
+export const deleteUserProfilePic = async (userId: string) => {
+  const res = await api.delete(apiEndpoins.deleteProfilePic(userId));
+  return res.data;
+};
+
 export const addMemeberToCourse = async (
   email: string,
   courseId: string,

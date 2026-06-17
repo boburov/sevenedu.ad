@@ -5,10 +5,11 @@ import {
   addMemeberToCourse,
   allCourse,
   getUserById,
+  updateUserProfilePic,
+  deleteUserProfilePic,
 } from "@/app/api/service/api";
 import { toast } from "react-toastify";
 import { useParams } from "next/navigation";
-import Image from "next/image";
 
 interface Course {
   id: string;
@@ -23,6 +24,7 @@ interface User {
   email: string;
   name: string;
   surname: string;
+  profilePic?: string;
 }
 
 type SubscriptionType = "FULL_CHARGE" | "MONTHLY";
@@ -36,6 +38,7 @@ const Page = () => {
   const [selectedSubscription, setSelectedSubscription] =
     useState<SubscriptionType>("FULL_CHARGE");
   const [userLoading, setUserLoading] = useState(true);
+  const [pfpUploading, setPfpUploading] = useState(false);
 
   // User ID ni olish
   const userId = decodeURIComponent(String(path.userId || path.id));
@@ -64,6 +67,7 @@ const Page = () => {
             email: userData.email,
             name: userData.name || "Ism mavjud emas",
             surname: userData.surname || "Familiya mavjud emas",
+            profilePic: userData.profilePic || "",
           });
         } else {
           toast.error("Foydalanuvchi ma'lumotlarida email topilmadi");
@@ -90,6 +94,50 @@ const Page = () => {
       })
       .finally(() => setLoading(false));
   }, []);
+
+  // O'quvchi profil rasmini yangilash — fayl VPS'ga yuklanadi.
+  const handlePfpChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // bir xil faylni qayta tanlash mumkin bo'lsin
+    if (!file || !user) return;
+
+    if (!file.type.startsWith("image/")) {
+      toast.error("Faqat rasm fayl yuklash mumkin");
+      return;
+    }
+
+    setPfpUploading(true);
+    try {
+      const updated = await updateUserProfilePic(user.id, file);
+      const newUrl: string = updated?.profilePic || "";
+      setUser((prev) => (prev ? { ...prev, profilePic: newUrl } : prev));
+      toast.success("Profil rasmi yangilandi");
+    } catch (error: unknown) {
+      console.error(error);
+      toast.error((error as Error)?.message || "Rasm yuklashda xatolik");
+    } finally {
+      setPfpUploading(false);
+    }
+  };
+
+  const handlePfpDelete = async () => {
+    if (!user) return;
+    if (!confirm("Profil rasmini o'chirilsinmi?")) return;
+
+    setPfpUploading(true);
+    try {
+      await deleteUserProfilePic(user.id);
+      setUser((prev) => (prev ? { ...prev, profilePic: "" } : prev));
+      toast.success("Profil rasmi o'chirildi");
+    } catch (error: unknown) {
+      console.error(error);
+      toast.error((error as Error)?.message || "Rasmni o'chirishda xatolik");
+    } finally {
+      setPfpUploading(false);
+    }
+  };
 
   const handleAddMember = async (courseId: string) => {
     if (!user?.email) {
@@ -173,6 +221,66 @@ const Page = () => {
           </div>
         )}
       </div>
+
+      {/* Profil rasmi (pfp) — yangisi VPS'ga yuklanadi */}
+      {user && (
+        <div className="max-w-md mx-auto bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+          <h3 className="text-lg font-semibold text-gray-800 mb-4">
+            🖼️ Profil rasmi
+          </h3>
+          <div className="flex items-center gap-5">
+            <div className="relative h-24 w-24 shrink-0 rounded-full overflow-hidden border border-gray-200 bg-gray-100">
+              {user.profilePic ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.profilePic}
+                  alt="Profil rasmi"
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center text-2xl font-bold text-gray-400">
+                  {(user.name?.[0] || user.email?.[0] || "?").toUpperCase()}
+                </div>
+              )}
+              {pfpUploading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                  <div className="h-6 w-6 animate-spin rounded-full border-2 border-white border-t-transparent"></div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <label
+                className={`inline-flex cursor-pointer items-center justify-center rounded-lg px-4 py-2 text-sm font-medium text-white transition-colors ${
+                  pfpUploading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700"
+                }`}
+              >
+                {user.profilePic ? "Rasmni almashtirish" : "Rasm yuklash"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  disabled={pfpUploading}
+                  onChange={handlePfpChange}
+                />
+              </label>
+
+              {user.profilePic && (
+                <button
+                  type="button"
+                  onClick={handlePfpDelete}
+                  disabled={pfpUploading}
+                  className="inline-flex items-center justify-center rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  O&apos;chirish
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Obuna turini tanlash */}
       <div className="max-w-md mx-auto bg-white p-6 rounded-xl border border-gray-200 shadow-sm">

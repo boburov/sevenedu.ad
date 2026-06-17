@@ -42,6 +42,8 @@ const apiEndpoins = {
   getOneUser: (id: string) => `${main_url.user}/${id}`,
   deleteUser: (id: number) => `${main_url.user}/delete/${id}`,
   changeUserDetails: (id: number) => `${main_url.user}/update/${id}`,
+  updateProfilePic: (id: string) => `${main_url.user}/updateProfilePic/${id}`,
+  deleteProfilePic: (id: string) => `${main_url.user}/deleteProfilePic/${id}`,
 };
 
 export default apiEndpoins;
