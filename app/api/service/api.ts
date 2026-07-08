@@ -95,6 +95,17 @@ export const getLessons = (id: string) => {
   const res = api.get(apiEndpoins.getCategory(id));
   return res;
 };
+
+// ── CEFR daraja (modul) nomlari ────────────────────────────
+export const getCourseLevels = (id: string) => api.get(`/courses/${id}/levels`);
+
+export const upsertCourseLevel = (
+  id: string,
+  data: { level: string; title: string; description?: string; order?: number }
+) => api.put(`/courses/${id}/levels`, data);
+
+export const deleteCourseLevel = (id: string, level: string) =>
+  api.delete(`/courses/${id}/levels/${level}`);
 export const addLesson = (id: string, formData: FormData) => {
   return api.post(apiEndpoins.addLesson(id), formData);
 };

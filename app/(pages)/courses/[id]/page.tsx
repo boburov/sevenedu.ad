@@ -5,6 +5,8 @@ import api, {
   deleteLesson,
   getLessons,
   updateLesson,
+  getCourseLevels,
+  upsertCourseLevel,
 } from "@/app/api/service/api";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -96,6 +98,12 @@ const LessonsPage = () => {
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
 
+  // Modul (CEFR daraja) nomlari
+  const [levelMetas, setLevelMetas] = useState<
+    Record<string, { title: string; description: string }>
+  >({});
+  const [savingLevel, setSavingLevel] = useState<string | null>(null);
+
   const { id: courseId } = useParams() as { id: string };
 
   // 📥 darslarni olish
@@ -122,6 +130,64 @@ const LessonsPage = () => {
   useEffect(() => {
     fetchLessons();
   }, [fetchLessons]);
+
+  // 📥 modul (daraja) nomlarini olish
+  const fetchLevels = useCallback(async () => {
+    try {
+      const res = await getCourseLevels(courseId);
+      const map: Record<string, { title: string; description: string }> = {};
+      (res.data || []).forEach(
+        (m: { level: string; title?: string; description?: string }) => {
+          map[m.level] = {
+            title: m.title || "",
+            description: m.description || "",
+          };
+        }
+      );
+      setLevelMetas(map);
+    } catch {
+      /* meta hali yo'q — e'tibor bermaymiz */
+    }
+  }, [courseId]);
+
+  useEffect(() => {
+    fetchLevels();
+  }, [fetchLevels]);
+
+  const setLevelField = (
+    lvl: string,
+    field: "title" | "description",
+    value: string
+  ) =>
+    setLevelMetas((prev) => ({
+      ...prev,
+      [lvl]: {
+        title: prev[lvl]?.title || "",
+        description: prev[lvl]?.description || "",
+        [field]: value,
+      },
+    }));
+
+  const saveLevel = async (lvl: string) => {
+    const meta = levelMetas[lvl];
+    if (!meta || !meta.title.trim()) {
+      alert("Modul nomini kiriting");
+      return;
+    }
+    setSavingLevel(lvl);
+    try {
+      await upsertCourseLevel(courseId, {
+        level: lvl,
+        title: meta.title.trim(),
+        description: meta.description?.trim() || undefined,
+      });
+      await fetchLevels();
+    } catch {
+      alert("Saqlashda xatolik");
+    } finally {
+      setSavingLevel(null);
+    }
+  };
 
   useEffect(() => {
     if (file) {
@@ -351,6 +417,69 @@ const LessonsPage = () => {
             )}
           </div>
         </form>
+      </div>
+
+      {/* MODUL (CEFR DARAJA) NOMLARI */}
+      <div className="bg-white rounded-2xl shadow-xl p-6 max-w-2xl mx-auto mt-8">
+        <h2 className="text-xl font-semibold mb-1">🧩 Modul nomlari (CEFR)</h2>
+        <p className="text-sm text-gray-500 mb-5">
+          Har bir daraja uchun nom va qisqa tavsif. Bu nomlar mobil ilovada
+          darslar ustida ko‘rinadi. Bo‘sh qoldirsangiz — standart nom
+          ishlatiladi.
+        </p>
+
+        {CEFR_LEVELS.filter((lvl) => lessons.some((l) => l.level === lvl))
+          .length === 0 ? (
+          <p className="text-sm text-gray-400">
+            Hali birorta darsga CEFR daraja belgilanmagan. Yuqorida darsga
+            daraja bering, keyin shu yerda uni nomlaysiz.
+          </p>
+        ) : (
+          <div className="space-y-4">
+            {CEFR_LEVELS.filter((lvl) =>
+              lessons.some((l) => l.level === lvl)
+            ).map((lvl) => {
+              const meta = levelMetas[lvl] || { title: "", description: "" };
+              const count = lessons.filter((l) => l.level === lvl).length;
+              return (
+                <div key={lvl} className="border rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-xs font-bold px-2 py-1 rounded-full bg-sky-100 text-sky-700">
+                      {lvl}
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {count} ta dars
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    placeholder={`Modul nomi (masalan "Boshlang'ich asoslar")`}
+                    value={meta.title}
+                    onChange={(e) => setLevelField(lvl, "title", e.target.value)}
+                    className="w-full px-3 py-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                  <textarea
+                    placeholder="Qisqa tavsif (ixtiyoriy)"
+                    value={meta.description}
+                    onChange={(e) =>
+                      setLevelField(lvl, "description", e.target.value)
+                    }
+                    rows={2}
+                    className="w-full px-3 py-2 border rounded mb-2 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => saveLevel(lvl)}
+                    disabled={savingLevel === lvl}
+                    className="px-4 py-2 bg-sky-500 hover:bg-sky-600 disabled:opacity-50 text-white rounded text-sm transition"
+                  >
+                    {savingLevel === lvl ? "Saqlanmoqda…" : "Saqlash"}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* LESSONS */}
