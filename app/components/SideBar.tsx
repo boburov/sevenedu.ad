@@ -10,12 +10,16 @@ import {
   User,
   LogOut,
   UserPlus,
+  ShoppingBag,
+  Film,
+  Users,
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import logo from "../image/logo.png"
+import { usePermissions } from "../lib/permissions";
 
 const LogoMark = () => (
   <Image
@@ -54,21 +58,28 @@ const SideBar = () => {
     router.push("/login");
   };
 
+  const { canAny, isOwner, ready } = usePermissions();
+
   const navLinks = [
-    { label: "Bosh Sahifa", href: "/", icon: Home, group: "main" },
-    { label: "Kurs Yaratish", href: "/courses", icon: PlusSquare, group: "main" },
-    { label: "Foydalanuvchi Yaratish", href: "/create-user", icon: UserPlus, group: "main" },
-    { label: "Lug'at Qo'shish", href: "/dictionary", icon: BookA, group: "main" },
-    { label: "Test Qo'shish", href: "/quiz", icon: PlusSquare, group: "main" },
-    { label: "Foydalanuvchilarga Sms", href: "/send-sms", icon: MessageSquareIcon, group: "comms" },
-    { label: "Dars Qo'shish", href: "/lessons", icon: PlusSquare, group: "comms" },
-    { label: "Qayta joylashtrish", href: "/relocation", icon: Replace, group: "comms" },
-    { label: "Savol Qo'shish", href: "/sentence-puzzle", icon: BookA, group: "comms" },
-    { label: "O'quvchiga kurs qoshish", href: "/addmember", icon: PlusSquare, group: "comms" },
+    { label: "Bosh Sahifa", href: "/", icon: Home, group: "main", show: true },
+    { label: "Kurs Yaratish", href: "/courses", icon: PlusSquare, group: "main", show: canAny("courses") || canAny("lessons") },
+    { label: "Do'kon", href: "/shop", icon: ShoppingBag, group: "main", show: canAny("shop") },
+    { label: "Kinolar", href: "/movies", icon: Film, group: "main", show: canAny("movies") },
+    { label: "Foydalanuvchi Yaratish", href: "/create-user", icon: UserPlus, group: "main", show: canAny("users") },
+    { label: "Lug'at Qo'shish", href: "/dictionary", icon: BookA, group: "main", show: canAny("dictionary") },
+    { label: "Test Qo'shish", href: "/quiz", icon: PlusSquare, group: "main", show: canAny("quiz") },
+    { label: "Foydalanuvchilarga Sms", href: "/send-sms", icon: MessageSquareIcon, group: "comms", show: canAny("notifications") },
+    { label: "Dars Qo'shish", href: "/lessons", icon: PlusSquare, group: "comms", show: canAny("lessons") },
+    { label: "Qayta joylashtrish", href: "/relocation", icon: Replace, group: "comms", show: canAny("lessons") },
+    { label: "Savol Qo'shish", href: "/sentence-puzzle", icon: BookA, group: "comms", show: canAny("sentencePuzzle") },
+    { label: "O'quvchiga kurs qoshish", href: "/addmember", icon: PlusSquare, group: "comms", show: canAny("enrollment") },
+    { label: "Xodimlar", href: "/staff", icon: Users, group: "comms", show: isOwner },
   ];
 
-  const mainLinks = navLinks.filter((l) => l.group === "main");
-  const commsLinks = navLinks.filter((l) => l.group === "comms");
+  // Ruxsat hali yuklanmagan bo'lsa hech narsa ko'rsatmaymiz (miltillashning oldini olish)
+  const visibleLinks = ready ? navLinks.filter((l) => l.show) : navLinks.filter((l) => l.href === "/");
+  const mainLinks = visibleLinks.filter((l) => l.group === "main");
+  const commsLinks = visibleLinks.filter((l) => l.group === "comms");
 
   return (
     <aside className="fixed top-0 left-0 h-screen w-[300px] bg-[#0a0a0a] border-r border-white/10 flex flex-col z-40 p-6 font-sans">
@@ -112,12 +123,14 @@ const SideBar = () => {
           })}
         </ul>
 
-        <Divider />
+        {commsLinks.length > 0 && <Divider />}
 
         {/* Boshqaruv Section */}
+        {commsLinks.length > 0 && (
         <div className="text-[10px] font-medium tracking-[2px] uppercase text-white/25 mb-2 px-1 mt-4">
           BOSHQARUV
         </div>
+        )}
         <ul className="space-y-1">
           {commsLinks.map((link) => {
             const isActive = pathname === link.href;

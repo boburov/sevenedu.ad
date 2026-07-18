@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { Loader2, Play, Eye, BookOpen, Clock, BarChart3, AlertCircle, Home, GripVertical, Save } from "lucide-react";
-import { GetCourseById } from "@/app/api/service/api";
+import api, { GetCourseById } from "@/app/api/service/api";
 import Link from "next/link";
 
 interface Lesson {
@@ -145,21 +145,12 @@ export default function LessonsPage() {
 
       console.log("API ga yuboriladigan ma'lumot:", reorderData);
 
-      // API ga so'rov yuborish
-      const response = await fetch(`https://api.sevenedu.org/courses/${course.id}/reorder-lessons`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(reorderData),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP xato! Status: ${response.status}`);
-      }
-
-      const result = await response.json();
-      console.log("API javobi:", result);
+      // API ga so'rov yuborish (auth token bilan — api klienti orqali)
+      const result = await api.put(
+        `/courses/${course.id}/reorder-lessons`,
+        reorderData
+      );
+      console.log("API javobi:", result.data);
 
       alert("Tartib muvaffaqiyatli yangilandi!");
       setHasChanges(false);

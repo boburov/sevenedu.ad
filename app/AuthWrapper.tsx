@@ -5,6 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import SideBar from "./components/SideBar";
 import { ToastContainer } from "react-toastify";
 import { verifyAdminToken } from "./api/service/api";
+import { canAccessRoute, type AdminUser } from "./lib/permissions";
 
 export default function AuthWrapper({
   children,
@@ -28,7 +29,18 @@ export default function AuthWrapper({
     }
 
     verifyAdminToken()
-      .then(() => setChecked(true))
+      .then((me: AdminUser) => {
+        // Ruxsatlarni serverdan yangilab, localStorage'ni yangilaymiz
+        if (me && typeof me === "object") {
+          localStorage.setItem("user", JSON.stringify(me));
+        }
+        // Route-level ruxsat: ruxsatsiz sahifaga URL bilan kirilsa -> bosh sahifa
+        if (!canAccessRoute(me, pathname)) {
+          router.replace("/");
+          return;
+        }
+        setChecked(true);
+      })
       .catch(() => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");

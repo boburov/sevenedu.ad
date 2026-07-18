@@ -49,6 +49,7 @@ export const adminLogin = async (email: string, password: string) => {
       surname: string;
       email: string;
       role: string;
+      permissions: string[];
       isAuthenticated: boolean;
     };
   };
@@ -56,6 +57,89 @@ export const adminLogin = async (email: string, password: string) => {
 
 export const verifyAdminToken = async () => {
   const res = await api.get("/admin/me");
+  return res.data;
+};
+
+// Darslarni ikki dars orasiga (yoki boshiga) qo'shish.
+// afterLessonId: null => boshiga; lessonId => shu darsdan keyin.
+export const insertLessons = (
+  courseId: string,
+  afterLessonId: string | null,
+  lessons: {
+    title: string;
+    videoUrl: string;
+    isDemo: boolean;
+    level?: string;
+  }[],
+) => {
+  return api.post(`/courses/${courseId}/lessons/insert`, {
+    afterLessonId,
+    lessons,
+  });
+};
+
+// ── Xodimlar (staff) — faqat OWNER ─────────────────────────
+export interface StaffUser {
+  id: string;
+  name: string;
+  surname?: string | null;
+  email: string;
+  role: "OWNER" | "STAFF";
+  permissions: string[];
+  isActive: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface PermissionResource {
+  key: string;
+  label: string;
+  actions: ("view" | "create" | "edit" | "delete")[];
+}
+
+export const getPermissionsCatalog = async (): Promise<PermissionResource[]> => {
+  const res = await api.get("/staff/permissions-catalog");
+  return res.data;
+};
+
+export const getStaff = async (): Promise<StaffUser[]> => {
+  const res = await api.get("/staff");
+  return res.data;
+};
+
+export const createStaff = async (data: {
+  name: string;
+  surname?: string;
+  email: string;
+  password: string;
+  role?: "OWNER" | "STAFF";
+  permissions?: string[];
+}): Promise<StaffUser> => {
+  const res = await api.post("/staff", data);
+  return res.data;
+};
+
+export const updateStaff = async (
+  id: string,
+  data: Partial<{
+    name: string;
+    surname: string;
+    role: "OWNER" | "STAFF";
+    permissions: string[];
+    isActive: boolean;
+  }>,
+): Promise<StaffUser> => {
+  const res = await api.patch(`/staff/${id}`, data);
+  return res.data;
+};
+
+export const updateStaffPassword = async (id: string, password: string) => {
+  const res = await api.patch(`/staff/${id}/password`, { password });
+  return res.data;
+};
+
+export const deleteStaff = async (id: string) => {
+  const res = await api.delete(`/staff/${id}`);
   return res.data;
 };
 
@@ -91,6 +175,42 @@ export const updateCategory = (id: string, data: FormData) => {
   return api.patch(apiEndpoins.getCategory(id), data);
 };
 
+// ── Shop / Do'kon ────────────────────────────────────────────────
+export const allProducts = async () => {
+  const res = await api.get(apiEndpoins.allProducts);
+  return res;
+};
+
+export const createProduct = (data: FormData) => {
+  return api.post(apiEndpoins.createProduct, data);
+};
+
+export const updateProduct = (id: string, data: FormData) => {
+  return api.patch(apiEndpoins.updateProduct(id), data);
+};
+
+export const deleteProduct = async (id: string) => {
+  return api.delete(apiEndpoins.deleteProduct(id));
+};
+
+// ── Movies / Kinolar ─────────────────────────────────────────────
+export const moviesByCourse = async (courseId: string) => {
+  const res = await api.get(apiEndpoins.moviesByCourse(courseId));
+  return res;
+};
+
+export const createMovie = (data: FormData) => {
+  return api.post(apiEndpoins.createMovie, data);
+};
+
+export const updateMovie = (id: string, data: FormData) => {
+  return api.patch(apiEndpoins.updateMovie(id), data);
+};
+
+export const deleteMovie = async (id: string) => {
+  return api.delete(apiEndpoins.deleteMovie(id));
+};
+
 export const getLessons = (id: string) => {
   const res = api.get(apiEndpoins.getCategory(id));
   return res;
@@ -108,6 +228,23 @@ export const deleteCourseLevel = (id: string, level: string) =>
   api.delete(`/courses/${id}/levels/${level}`);
 export const addLesson = (id: string, formData: FormData) => {
   return api.post(apiEndpoins.addLesson(id), formData);
+};
+
+// ── Vimeo to'g'ridan-to'g'ri (brauzerdan) yuklash ────────────────
+// Server Vimeo'da bo'sh video ochib, tus upload endpoint qaytaradi.
+// Faylning o'zi server orqali o'tmaydi — brauzer to'g'ridan Vimeo'ga yuklaydi.
+export interface VimeoUploadTicket {
+  vimeoId: string;
+  uploadLink: string; // tus PATCH endpoint
+  videoLink: string; // lesson.videoUrl sifatida saqlanadi
+}
+
+export const createVimeoUploadTicket = async (
+  size: number,
+  name?: string
+): Promise<VimeoUploadTicket> => {
+  const res = await api.post("/courses/vimeo/upload-ticket", { size, name });
+  return res.data as VimeoUploadTicket;
 };
 
 export const deleteLesson = (id: string) => {

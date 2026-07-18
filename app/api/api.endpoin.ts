@@ -4,6 +4,8 @@ const main_url = {
   quiz: "quizs",
   quession: "quessions",
   user: "user",
+  shop: "shop",
+  movie: "movies",
 };
 
 const apiEndpoins = {
@@ -44,6 +46,18 @@ const apiEndpoins = {
   changeUserDetails: (id: number) => `${main_url.user}/update/${id}`,
   updateProfilePic: (id: string) => `${main_url.user}/updateProfilePic/${id}`,
   deleteProfilePic: (id: string) => `${main_url.user}/deleteProfilePic/${id}`,
+
+  // shop (do'kon)
+  allProducts: `${main_url.shop}/products`,
+  createProduct: `${main_url.shop}/products`,
+  updateProduct: (id: string) => `${main_url.shop}/products/${id}`,
+  deleteProduct: (id: string) => `${main_url.shop}/products/${id}`,
+
+  // movies (kurs kinolari)
+  moviesByCourse: (courseId: string) => `${main_url.movie}/course/${courseId}`,
+  createMovie: `${main_url.movie}`,
+  updateMovie: (id: string) => `${main_url.movie}/${id}`,
+  deleteMovie: (id: string) => `${main_url.movie}/${id}`,
 };
 
 export default apiEndpoins;
