@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { createUser } from "@/app/api/service/api";
 
 type Role = "USER" | "ADMIN";
 
@@ -38,23 +39,16 @@ export default function CreateUserPage() {
         setLoading(true);
 
         try {
-            const res = await fetch("https://api.sevenedu.org/user/create", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    name: form.name,
-                    surname: form.surname,
-                    email: form.email,
-                    password: form.password,
-                    phonenumber: form.phonenumber,
-                    role: form.role,
-                }),
+            // Autentifikatsiya qilingan admin klienti orqali — token avtomatik
+            // qo'shiladi (aks holda `users.create` ruxsat guardi 401 qaytaradi).
+            await createUser({
+                name: form.name,
+                surname: form.surname,
+                email: form.email,
+                password: form.password,
+                phonenumber: form.phonenumber,
+                role: form.role,
             });
-
-            const data = await res.json();
-
-            if (!res.ok)
-                throw new Error(data.message || "Xatolik yuz berdi");
 
             setSuccess("Foydalanuvchi muvaffaqiyatli yaratildi ✅");
 
@@ -69,7 +63,8 @@ export default function CreateUserPage() {
             });
 
         } catch (e: any) {
-            setError(e.message);
+            // Axios interceptor xatoni STRING (message) sifatida reject qiladi.
+            setError(typeof e === "string" ? e : e?.message || "Xatolik yuz berdi");
         } finally {
             setLoading(false);
         }

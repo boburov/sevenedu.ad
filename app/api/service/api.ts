@@ -167,6 +167,18 @@ export const getUserByEmail = async (email: string) => {
   return res;
 };
 
+export const createUser = async (data: {
+  name?: string;
+  surname?: string;
+  email: string;
+  password: string;
+  phonenumber?: string;
+  role?: "USER" | "ADMIN";
+}) => {
+  const res = await api.post("/user/create", data);
+  return res.data;
+};
+
 export const deleteCategory = async (id: string) => {
   return api.delete(apiEndpoins.deleteCategory(id));
 };
@@ -245,6 +257,40 @@ export const createVimeoUploadTicket = async (
 ): Promise<VimeoUploadTicket> => {
   const res = await api.post("/courses/vimeo/upload-ticket", { size, name });
   return res.data as VimeoUploadTicket;
+};
+
+// ── Vimeo kutubxonasi (papkalar + videolar) ──────────────────────
+export interface VimeoFolder {
+  id: string;
+  name: string;
+  count: number | null;
+}
+export interface VimeoLibraryVideo {
+  id: string;
+  name: string;
+  link: string; // vimeo.com/<id> — lesson videoUrl
+  durationSec: number | null;
+  thumb: string | null;
+  view: string | null;
+}
+
+export const listVimeoFolders = async (): Promise<VimeoFolder[]> => {
+  const res = await api.get("/courses/vimeo/folders");
+  return res.data as VimeoFolder[];
+};
+
+export const listVimeoFolderVideos = async (
+  folderId: string,
+  page = 1
+): Promise<{ videos: VimeoLibraryVideo[]; total: number; hasNext: boolean }> => {
+  const res = await api.get(`/courses/vimeo/folders/${folderId}/videos`, {
+    params: { page },
+  });
+  return res.data as {
+    videos: VimeoLibraryVideo[];
+    total: number;
+    hasNext: boolean;
+  };
 };
 
 export const deleteLesson = (id: string) => {
