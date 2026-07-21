@@ -83,6 +83,12 @@ interface AdminStats {
       fullCharge: number;
       total: number;
     }[];
+    thisMonth: {
+      label: string;
+      monthly: number;
+      fullCharge: number;
+      total: number;
+    };
   };
   activity: { total: number; today: number; week: number };
   certificates: { total: number; today: number };
@@ -94,6 +100,13 @@ interface AdminStats {
       shortName: string;
       thumbnail: string;
       enrollments: number;
+    }[];
+    salesByMonth: {
+      month: string;
+      label: string;
+      monthly: number;
+      fullCharge: number;
+      total: number;
     }[];
   };
   lists: {
@@ -218,6 +231,16 @@ const Page = () => {
       Math.max(
         1,
         ...((stats?.charts.newUsersByDay ?? []).map((d) => d.count))
+      ),
+    [stats]
+  );
+
+  // Oylik sotuvlar grafigi uchun eng katta oy (balandlikni normallashtirish)
+  const salesMonthMax = useMemo(
+    () =>
+      Math.max(
+        1,
+        ...((stats?.charts.salesByMonth ?? []).map((m) => m.total))
       ),
     [stats]
   );
@@ -432,6 +455,143 @@ const Page = () => {
                 )}
               </tbody>
             </table>
+          </div>
+        </div>
+      </section>
+
+      {/* Oylik sotuvlar (oxirgi 12 oy) */}
+      <section>
+        <div className="flex items-center justify-between flex-wrap gap-2 mb-3">
+          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">
+            📅 Oylik sotuvlar (oxirgi 12 oy)
+          </h2>
+          <div className="flex items-center gap-4 text-xs text-gray-500">
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-violet-500" /> Oylik
+            </span>
+            <span className="flex items-center gap-1.5">
+              <span className="w-3 h-3 rounded-sm bg-amber-500" /> To&apos;liq
+            </span>
+          </div>
+        </div>
+
+        {/* Bu oy (joriy kalendar oy) */}
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          <StatCard
+            label="Bu oy — jami"
+            value={stats?.sales.thisMonth.total ?? 0}
+            sub={stats?.sales.thisMonth.label}
+            icon={ShoppingCart}
+            tone="emerald"
+          />
+          <StatCard
+            label="Bu oy — Oylik"
+            value={stats?.sales.thisMonth.monthly ?? 0}
+            sub="Monthly obunalar"
+            icon={Wallet}
+            tone="violet"
+          />
+          <StatCard
+            label="Bu oy — To'liq"
+            value={stats?.sales.thisMonth.fullCharge ?? 0}
+            sub="Full sotuvlar"
+            icon={GraduationCap}
+            tone="amber"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {/* Bar chart */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-5">
+            <h3 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-emerald-600" /> Oylar kesimida
+              sotuvlar
+            </h3>
+            <div className="flex items-end gap-1.5 h-48">
+              {(stats?.charts.salesByMonth ?? []).map((m) => (
+                <div
+                  key={m.month}
+                  className="flex-1 flex flex-col items-center gap-1 min-w-0 group"
+                  title={`${m.label}: Oylik ${m.monthly}, To'liq ${m.fullCharge}, Jami ${m.total}`}
+                >
+                  <div className="w-full flex-1 flex flex-col justify-end">
+                    <div
+                      className="w-full bg-violet-500 rounded-t-sm transition-all group-hover:bg-violet-600"
+                      style={{ height: `${(m.monthly / salesMonthMax) * 100}%` }}
+                    />
+                    <div
+                      className="w-full bg-amber-500 transition-all group-hover:bg-amber-600"
+                      style={{
+                        height: `${(m.fullCharge / salesMonthMax) * 100}%`,
+                      }}
+                    />
+                  </div>
+                  <span className="text-[10px] text-gray-400 truncate w-full text-center">
+                    {m.label.split(" ")[0].slice(0, 3)}
+                  </span>
+                </div>
+              ))}
+              {!stats?.charts.salesByMonth?.length && (
+                <p className="text-sm text-gray-400 m-auto">
+                  Hozircha sotuvlar yo&apos;q
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* Table */}
+          <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
+            <div className="flex items-center gap-2 px-5 py-4 border-b border-gray-100">
+              <Calendar className="w-5 h-5 text-sky-600" />
+              <h3 className="font-semibold text-gray-800">Oylik jadval</h3>
+            </div>
+            <div className="overflow-x-auto max-h-72 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0">
+                  <tr className="text-left text-gray-500 bg-gray-50">
+                    <th className="px-5 py-2.5 font-medium">Oy</th>
+                    <th className="px-5 py-2.5 font-medium text-center">Oylik</th>
+                    <th className="px-5 py-2.5 font-medium text-center">To&apos;liq</th>
+                    <th className="px-5 py-2.5 font-medium text-center">Jami</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...(stats?.charts.salesByMonth ?? [])]
+                    .reverse()
+                    .map((m) => (
+                      <tr
+                        key={m.month}
+                        className="border-t border-gray-50 hover:bg-gray-50/60"
+                      >
+                        <td className="px-5 py-2.5 font-medium text-gray-800">
+                          {m.label}
+                        </td>
+                        <td className="px-5 py-2.5 text-center text-violet-600">
+                          {m.monthly}
+                        </td>
+                        <td className="px-5 py-2.5 text-center text-amber-600">
+                          {m.fullCharge}
+                        </td>
+                        <td className="px-5 py-2.5 text-center">
+                          <span className="inline-flex items-center justify-center min-w-[2rem] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 font-semibold">
+                            {m.total}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  {!stats?.charts.salesByMonth?.length && (
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className="px-5 py-8 text-center text-gray-400"
+                      >
+                        Hozircha sotuvlar yo&apos;q
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </section>

@@ -9,6 +9,10 @@ import api, {
   upsertCourseLevel,
   insertLessons,
   createVimeoUploadTicket,
+  listVimeoFolders,
+  listVimeoFolderVideos,
+  type VimeoFolder,
+  type VimeoLibraryVideo,
 } from "@/app/api/service/api";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -87,6 +91,196 @@ const VideoPlayer = ({
   return <video src={url} controls className={`rounded-lg w-full ${className}`} />;
 };
 
+// soniyani m:ss ko'rinishga
+const fmtDur = (s?: number | null) => {
+  if (s == null) return "";
+  const m = Math.floor(s / 60);
+  const ss = String(Math.floor(s % 60)).padStart(2, "0");
+  return `${m}:${ss}`;
+};
+
+// 🎬 Vimeo kutubxonasi modali — papka tanlab, videoni formaga qo'yish yoki
+// havolasini nusxalash. Token serverda qoladi (endpointlar proxy).
+function VimeoLibraryModal({
+  onClose,
+  onPick,
+}: {
+  onClose: () => void;
+  onPick: (v: VimeoLibraryVideo) => void;
+}) {
+  const [folders, setFolders] = useState<VimeoFolder[]>([]);
+  const [activeFolder, setActiveFolder] = useState<string | null>(null);
+  const [videos, setVideos] = useState<VimeoLibraryVideo[]>([]);
+  const [loadingF, setLoadingF] = useState(true);
+  const [loadingV, setLoadingV] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const [q, setQ] = useState("");
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const openFolder = useCallback((id: string) => {
+    setActiveFolder(id);
+    setLoadingV(true);
+    setVideos([]);
+    setQ("");
+    listVimeoFolderVideos(id)
+      .then((r) => {
+        // "turk2" vs "turk20" to'g'ri tartiblansin (raqamli saralash)
+        const sorted = [...r.videos].sort((a, b) =>
+          a.name.localeCompare(b.name, undefined, { numeric: true })
+        );
+        setVideos(sorted);
+      })
+      .catch((e) =>
+        setErr(typeof e === "string" ? e : "Videolarni olishda xatolik")
+      )
+      .finally(() => setLoadingV(false));
+  }, []);
+
+  useEffect(() => {
+    listVimeoFolders()
+      .then((fs) => {
+        const withItems = fs.filter((f) => (f.count ?? 0) > 0);
+        setFolders(withItems);
+        if (withItems[0]) openFolder(withItems[0].id);
+      })
+      .catch((e) =>
+        setErr(typeof e === "string" ? e : "Papkalarni olishda xatolik")
+      )
+      .finally(() => setLoadingF(false));
+  }, [openFolder]);
+
+  const copyLink = async (v: VimeoLibraryVideo) => {
+    try {
+      await navigator.clipboard.writeText(v.link);
+      setCopiedId(v.id);
+      setTimeout(() => setCopiedId((c) => (c === v.id ? null : c)), 1500);
+    } catch {
+      /* clipboard yo'q — "Tanlash" orqali formaga qo'ying */
+    }
+  };
+
+  const shown = videos.filter((v) =>
+    v.name.toLowerCase().includes(q.trim().toLowerCase())
+  );
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] bg-black/50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-3 border-b">
+          <h3 className="font-semibold text-lg">🎬 Vimeo kutubxonasi</h3>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-700 text-2xl leading-none"
+          >
+            ×
+          </button>
+        </div>
+
+        {err && (
+          <div className="px-5 py-2 bg-red-50 text-red-600 text-sm">{err}</div>
+        )}
+
+        <div className="flex flex-1 min-h-0">
+          {/* Papkalar */}
+          <aside className="w-52 border-r overflow-y-auto shrink-0 bg-gray-50">
+            {loadingF ? (
+              <p className="p-4 text-sm text-gray-400">Yuklanmoqda…</p>
+            ) : (
+              folders.map((f) => (
+                <button
+                  key={f.id}
+                  onClick={() => openFolder(f.id)}
+                  className={`w-full text-left px-4 py-2.5 text-sm border-b hover:bg-sky-50 ${
+                    activeFolder === f.id
+                      ? "bg-sky-100 text-sky-700 font-medium"
+                      : ""
+                  }`}
+                >
+                  {f.name}
+                  <span className="text-xs text-gray-400 ml-1">({f.count})</span>
+                </button>
+              ))
+            )}
+          </aside>
+
+          {/* Videolar */}
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="p-3 border-b">
+              <input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder="Nomidan qidirish…"
+                className="w-full px-3 py-2 border rounded text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
+            <div className="flex-1 overflow-y-auto p-4">
+              {loadingV ? (
+                <p className="text-sm text-gray-400">Videolar yuklanmoqda…</p>
+              ) : shown.length === 0 ? (
+                <p className="text-sm text-gray-400">Video topilmadi.</p>
+              ) : (
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                  {shown.map((v) => (
+                    <div
+                      key={v.id}
+                      className="border rounded-lg overflow-hidden flex flex-col"
+                    >
+                      <div className="relative bg-gray-100 aspect-video">
+                        {v.thumb && (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={v.thumb}
+                            alt={v.name}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                        {v.durationSec != null && (
+                          <span className="absolute bottom-1 right-1 bg-black/70 text-white text-[10px] px-1 rounded">
+                            {fmtDur(v.durationSec)}
+                          </span>
+                        )}
+                      </div>
+                      <div className="p-2 flex flex-col gap-2 flex-1">
+                        <p
+                          className="text-xs font-medium truncate"
+                          title={v.name}
+                        >
+                          {v.name}
+                        </p>
+                        <div className="mt-auto flex gap-1">
+                          <button
+                            onClick={() => onPick(v)}
+                            className="flex-1 py-1.5 bg-sky-500 hover:bg-sky-600 text-white rounded text-xs"
+                          >
+                            Tanlash
+                          </button>
+                          <button
+                            onClick={() => copyLink(v)}
+                            title="Havolani nusxalash"
+                            className="px-2 py-1.5 bg-gray-100 hover:bg-gray-200 rounded text-xs"
+                          >
+                            {copiedId === v.id ? "✓" : "📋"}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const LessonsPage = () => {
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [title, setTitle] = useState("");
@@ -103,6 +297,17 @@ const LessonsPage = () => {
 
   // Qo'shish joyi: "" = eng oxiriga, "__start__" = eng boshiga, aks holda lessonId (shundan keyin)
   const [insertAfter, setInsertAfter] = useState<string>("");
+
+  // 🎬 Vimeo kutubxonasi oynasi
+  const [pickerOpen, setPickerOpen] = useState(false);
+
+  // Kutubxonadan video tanlanganda — havolani formaga qo'yamiz
+  const handlePickVimeo = (v: VimeoLibraryVideo) => {
+    setVideoUrl(v.link);
+    setFile(null); // URL tanlansa, tanlangan fayldan voz kechamiz
+    if (!title.trim()) setTitle(v.name);
+    setPickerOpen(false);
+  };
 
   const { can, ready: permsReady } = usePermissions();
   const canCreate = can("lessons", "create");
@@ -340,6 +545,13 @@ const LessonsPage = () => {
 
   return (
     <div className="px-4 py-10 lg:px-10 w-full min-h-screen bg-gray-50">
+      {pickerOpen && (
+        <VimeoLibraryModal
+          onClose={() => setPickerOpen(false)}
+          onPick={handlePickVimeo}
+        />
+      )}
+
       {loading && (
         <div className="fixed inset-0 z-50 bg-black/50 flex flex-col items-center justify-center gap-4">
           <div className="w-14 h-14 border-4 border-t-transparent border-white rounded-full animate-spin" />
@@ -414,6 +626,13 @@ const LessonsPage = () => {
               onChange={(e) => setVideoUrl(e.target.value)}
               className="w-full px-4 py-3 border rounded focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
+            <button
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              className="mt-2 inline-flex items-center gap-1.5 px-3 py-2 bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 rounded-lg text-sm font-medium transition"
+            >
+              🎬 Vimeo kutubxonasidan tanlash
+            </button>
           </div>
 
           {/* URL PREVIEW */}
