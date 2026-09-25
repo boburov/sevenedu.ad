@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   addMemeberToCourse,
   allCourse,
   getUserById,
+  removeCourseFromUser,
   updateUserProfilePic,
   deleteUserProfilePic,
 } from "@/app/api/service/api";
@@ -13,10 +14,18 @@ import { useParams } from "next/navigation";
 
 interface Course {
   id: string;
-  name: string;
+  title: string;
   goal: string;
   thumbnail: string;
-  price?: number;
+}
+
+type SubscriptionType = "FULL_CHARGE" | "MONTHLY";
+
+interface Enrollment {
+  courseId: string;
+  subscription: SubscriptionType | "FREE";
+  joinedAt: string;
+  course?: { title?: string; thumbnail?: string };
 }
 
 interface User {
@@ -25,15 +34,21 @@ interface User {
   name: string;
   surname: string;
   profilePic?: string;
+  courses: Enrollment[];
 }
 
-type SubscriptionType = "FULL_CHARGE" | "MONTHLY";
+const subscriptionLabel: Record<Enrollment["subscription"], string> = {
+  FULL_CHARGE: "📦 To'liq to'lov",
+  MONTHLY: "📅 Oylik obuna",
+  FREE: "🎁 Bepul",
+};
 
 const Page = () => {
   const path = useParams();
   const [courses, setCourses] = useState<Course[]>([]);
   const [loading, setLoading] = useState(true);
   const [addingCourseId, setAddingCourseId] = useState<string | null>(null);
+  const [removingCourseId, setRemovingCourseId] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [selectedSubscription, setSelectedSubscription] =
     useState<SubscriptionType>("FULL_CHARGE");
@@ -42,46 +57,42 @@ const Page = () => {
 
   // User ID ni olish
   const userId = decodeURIComponent(String(path.userId || path.id));
-  console.log("User ID:", userId);
+
+  // User ma'lumotlarini (biriktirilgan kurslari bilan) olish
+  const fetchUserData = useCallback(async () => {
+    if (!userId) {
+      setUserLoading(false);
+      toast.error("Foydalanuvchi ID si topilmadi");
+      return;
+    }
+
+    try {
+      const userRes = await getUserById(userId);
+      const userData = userRes.data || userRes;
+
+      if (userData && userData.email) {
+        setUser({
+          id: userData.id || userId,
+          email: userData.email,
+          name: userData.name || "Ism mavjud emas",
+          surname: userData.surname || "Familiya mavjud emas",
+          profilePic: userData.profilePic || "",
+          courses: Array.isArray(userData.courses) ? userData.courses : [],
+        });
+      } else {
+        toast.error("Foydalanuvchi ma'lumotlarida email topilmadi");
+      }
+    } catch (error) {
+      console.error("User ma'lumotlarini olishda xatolik:", error);
+      toast.error("Foydalanuvchi ma'lumotlarini olishda xatolik");
+    } finally {
+      setUserLoading(false);
+    }
+  }, [userId]);
 
   useEffect(() => {
-    // User ma'lumotlarini olish
-    const fetchUserData = async () => {
-      if (!userId) {
-        setUserLoading(false);
-        toast.error("Foydalanuvchi ID si topilmadi");
-        return;
-      }
-
-      try {
-        // getUserById orqali user ma'lumotlarini olish
-        const userRes = await getUserById(userId);
-        console.log("User ma'lumotlari:", userRes);
-
-        // API response strukturasi qanday ekanligiga qarab
-        const userData = userRes.data || userRes;
-
-        if (userData && userData.email) {
-          setUser({
-            id: userData.id || userId,
-            email: userData.email,
-            name: userData.name || "Ism mavjud emas",
-            surname: userData.surname || "Familiya mavjud emas",
-            profilePic: userData.profilePic || "",
-          });
-        } else {
-          toast.error("Foydalanuvchi ma'lumotlarida email topilmadi");
-        }
-      } catch (error) {
-        console.error("User ma'lumotlarini olishda xatolik:", error);
-        toast.error("Foydalanuvchi ma'lumotlarini olishda xatolik");
-      } finally {
-        setUserLoading(false);
-      }
-    };
-
     fetchUserData();
-  }, [userId]);
+  }, [fetchUserData]);
 
   useEffect(() => {
     allCourse()
@@ -96,9 +107,7 @@ const Page = () => {
   }, []);
 
   // O'quvchi profil rasmini yangilash — fayl VPS'ga yuklanadi.
-  const handlePfpChange = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handlePfpChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     e.target.value = ""; // bir xil faylni qayta tanlash mumkin bo'lsin
     if (!file || !user) return;
@@ -145,19 +154,12 @@ const Page = () => {
       return;
     }
 
-    console.log(
-      "User Email:",
-      user.email,
-      "Course ID:",
-      courseId,
-      "Subscription:",
-      selectedSubscription
-    );
     setAddingCourseId(courseId);
 
     try {
       await addMemeberToCourse(user.email, courseId, selectedSubscription);
       toast.success("Foydalanuvchi kursga muvaffaqiyatli qo'shildi!");
+      await fetchUserData();
     } catch (error: unknown) {
       console.error(error);
       toast.error((error as Error)?.message || "Qo'shishda xatolik yuz berdi");
@@ -166,16 +168,48 @@ const Page = () => {
     }
   };
 
+  const handleRemoveCourse = async (courseId: string, title: string) => {
+    if (!user) return;
+    if (
+      !confirm(
+        `"${title}" kursini ${user.name} ${user.surname}dan olib tashlaysizmi?\n\nO'quvchi bu kursga kira olmaydi. Dars progressi saqlanib qoladi.`,
+      )
+    )
+      return;
+
+    setRemovingCourseId(courseId);
+    try {
+      await removeCourseFromUser(user.id, courseId);
+      toast.success("Kurs foydalanuvchidan olib tashlandi");
+      setUser((u) =>
+        u
+          ? { ...u, courses: u.courses.filter((c) => c.courseId !== courseId) }
+          : u,
+      );
+    } catch (error: unknown) {
+      console.error(error);
+      toast.error("Kursni olib tashlashda xatolik yuz berdi");
+    } finally {
+      setRemovingCourseId(null);
+    }
+  };
+
+  const enrolledIds = new Set(user?.courses.map((c) => c.courseId) ?? []);
+  const courseTitle = (e: Enrollment) =>
+    e.course?.title ||
+    courses.find((c) => c.id === e.courseId)?.title ||
+    e.courseId;
+
   const subscriptionOptions = [
     {
       value: "FULL_CHARGE" as SubscriptionType,
-      label: "📦 To&apos;liq to&apos;lov",
-      description: "Bir martalik to&apos;liq to&apos;lov",
+      label: "📦 To'liq to'lov",
+      description: "Bir martalik to'liq to'lov",
     },
     {
       value: "MONTHLY" as SubscriptionType,
       label: "📅 Oylik obuna",
-      description: "Har oy to&apos;lov",
+      description: "Har oy to'lov",
     },
   ];
 
@@ -206,7 +240,7 @@ const Page = () => {
   return (
     <div className="container mx-auto px-4 py-8 space-y-6">
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-gray-800">{`Kurslarga Qo'shish`}</h1>
+        <h1 className="text-3xl font-bold text-gray-800">Foydalanuvchi</h1>
         {user && (
           <div className="mt-4 p-4 bg-blue-50 rounded-lg max-w-md mx-auto">
             <p className="text-gray-700">
@@ -282,6 +316,50 @@ const Page = () => {
         </div>
       )}
 
+      {/* Biriktirilgan kurslar */}
+      <div className="max-w-md mx-auto bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">
+          📚 Biriktirilgan kurslar ({user.courses.length})
+        </h3>
+        {user.courses.length === 0 ? (
+          <p className="text-sm text-gray-500">
+            Hozircha hech qanday kurs biriktirilmagan.
+          </p>
+        ) : (
+          <ul className="divide-y divide-gray-100">
+            {user.courses.map((e) => {
+              const title = courseTitle(e);
+              return (
+                <li
+                  key={e.courseId}
+                  className="flex items-center justify-between gap-3 py-3"
+                >
+                  <div className="min-w-0">
+                    <p className="font-medium text-gray-800 truncate">
+                      {title}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {subscriptionLabel[e.subscription] ?? e.subscription} ·{" "}
+                      {new Date(e.joinedAt).toLocaleDateString("uz-UZ")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveCourse(e.courseId, title)}
+                    disabled={removingCourseId === e.courseId}
+                    className="shrink-0 rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {removingCourseId === e.courseId
+                      ? "Olinmoqda..."
+                      : "Olib tashlash"}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+
       {/* Obuna turini tanlash */}
       <div className="max-w-md mx-auto bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
         <h3 className="text-lg font-semibold text-gray-800 mb-4">
@@ -336,7 +414,7 @@ const Page = () => {
               <div className="relative h-40 rounded-xl overflow-hidden">
                 <img
                   src={course.thumbnail || "/api/placeholder/400/200"}
-                  alt={course.name}
+                  alt={course.title}
                   onError={(e) => {
                     e.currentTarget.src = "/api/placeholder/400/200";
                   }}
@@ -345,46 +423,36 @@ const Page = () => {
 
               <div className="space-y-3">
                 <h2 className="text-xl font-bold text-gray-800 line-clamp-2">
-                  {course.name}
+                  {course.title}
                 </h2>
                 <p className="text-gray-600 text-sm line-clamp-3">
                   {course.goal}
                 </p>
 
-                {course.price && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-500">Narx:</span>
-                    <span className="font-semibold text-green-600">
-                      {course.price.toLocaleString()} so&apos;m
-                    </span>
-                  </div>
-                )}
-
                 <div className="pt-2">
-                  <button
-                    onClick={() => handleAddMember(course.id)}
-                    disabled={addingCourseId === course.id}
-                    className={`w-full px-4 py-3 rounded-lg font-medium transition-colors ${
-                      addingCourseId === course.id
-                        ? "bg-gray-400 cursor-not-allowed"
-                        : "bg-blue-600 hover:bg-blue-700 text-white"
-                    }`}
-                  >
-                    {addingCourseId === course.id ? (
-                      <span className="flex items-center justify-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        Qo&apos;shilmoqda...
-                      </span>
-                    ) : (
-                      `➕ ${selectedSubscription === "FULL_CHARGE" ? "To&apos;liq to&apos;lov" : "Oylik obuna"} bilan qo&apos;shilish`
-                    )}
-                  </button>
-
-                  {selectedSubscription === "MONTHLY" && course.price && (
-                    <p className="text-xs text-gray-500 text-center mt-2">
-                      Oylik to&apos;lov:{" "}
-                      {Math.round(course.price / 12).toLocaleString()} so&apos;m
-                    </p>
+                  {enrolledIds.has(course.id) ? (
+                    <div className="w-full px-4 py-3 rounded-lg font-medium text-center bg-green-50 text-green-700 border border-green-200">
+                      ✓ Biriktirilgan
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleAddMember(course.id)}
+                      disabled={addingCourseId === course.id}
+                      className={`w-full px-4 py-3 rounded-lg font-medium transition-colors ${
+                        addingCourseId === course.id
+                          ? "bg-gray-400 cursor-not-allowed"
+                          : "bg-blue-600 hover:bg-blue-700 text-white"
+                      }`}
+                    >
+                      {addingCourseId === course.id ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                          Qo&apos;shilmoqda...
+                        </span>
+                      ) : (
+                        `➕ ${selectedSubscription === "FULL_CHARGE" ? "To'liq to'lov" : "Oylik obuna"} bilan qo'shish`
+                      )}
+                    </button>
                   )}
                 </div>
               </div>

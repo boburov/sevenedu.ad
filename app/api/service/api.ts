@@ -360,6 +360,13 @@ export const addMemeberToCourse = async (
     throw error;
   }
 };
+
+// O'quvchidan kursni olib tashlash (UserCourse o'chadi, progress saqlanadi)
+export const removeCourseFromUser = async (userId: string, courseId: string) => {
+  const res = await api.delete(`/user/${userId}/courses/${courseId}`);
+  return res.data;
+};
+
 interface QuizData {
   question: string;
   options: string[];
