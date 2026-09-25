@@ -259,6 +259,15 @@ export const createVimeoUploadTicket = async (
   return res.data as VimeoUploadTicket;
 };
 
+// Kino fayli uchun xuddi shunday ticket (movies.create ruxsati bilan)
+export const createMovieVimeoUploadTicket = async (
+  size: number,
+  name?: string
+): Promise<VimeoUploadTicket> => {
+  const res = await api.post("/movies/vimeo/upload-ticket", { size, name });
+  return res.data as VimeoUploadTicket;
+};
+
 // ── Vimeo kutubxonasi (papkalar + videolar) ──────────────────────
 export interface VimeoFolder {
   id: string;

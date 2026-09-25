@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import * as tus from "tus-js-client";
 import {
+  createMovieVimeoUploadTicket,
   allCourse,
   moviesByCourse,
   createMovie,
@@ -40,6 +42,8 @@ const MoviesPage = () => {
   const [preview, setPreview] = useState<string | null>(null);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const resetForm = () => {
     setTitle("");
@@ -49,6 +53,8 @@ const MoviesPage = () => {
     setPoster(null);
     setPreview(null);
     setEditingId(null);
+    setVideoFile(null);
+    setUploadProgress(0);
   };
 
   useEffect(() => {
@@ -89,23 +95,52 @@ const MoviesPage = () => {
     }
   }, [poster]);
 
+  // 📤 Kino faylini to'g'ridan-to'g'ri Vimeo'ga (tus) yuklaydi va kanonik
+  // Vimeo havolasini qaytaradi. Fayl server orqali o'tmaydi.
+  const uploadFileToVimeo = (f: File, name: string): Promise<string> =>
+    new Promise((resolve, reject) => {
+      createMovieVimeoUploadTicket(f.size, name)
+        .then((ticket) => {
+          const upload = new tus.Upload(f, {
+            uploadUrl: ticket.uploadLink,
+            retryDelays: [0, 3000, 5000, 10000, 20000, 60000],
+            metadata: { filename: f.name, filetype: f.type },
+            onProgress: (uploaded, total) =>
+              setUploadProgress(
+                total ? Math.max(1, Math.round((uploaded / total) * 100)) : 1,
+              ),
+            onSuccess: () => resolve(ticket.videoLink),
+            onError: (error) => reject(error),
+          });
+          upload.start();
+        })
+        .catch(reject);
+    });
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!courseId) return toast.error("Avval kursni tanlang");
-    if (!title.trim() || !videoUrl.trim()) {
-      return toast.error("Nom va video havolasini to'ldiring");
+    if (!title.trim() || (!videoUrl.trim() && !videoFile)) {
+      return toast.error("Nom va video havolasi (yoki fayl) kiriting");
     }
-
-    const fd = new FormData();
-    fd.append("courseId", courseId);
-    fd.append("title", title.trim());
-    fd.append("videoUrl", videoUrl.trim());
-    if (description.trim()) fd.append("description", description.trim());
-    if (order.trim()) fd.append("order", String(Number(order) || 0));
-    if (poster) fd.append("poster", poster);
 
     setLoading(true);
     try {
+      // Fayl tanlangan bo'lsa — avval Vimeo'ga yuklab, havolasini olamiz
+      let finalVideoUrl = videoUrl.trim();
+      if (videoFile) {
+        setUploadProgress(1);
+        finalVideoUrl = await uploadFileToVimeo(videoFile, title.trim());
+      }
+
+      const fd = new FormData();
+      fd.append("courseId", courseId);
+      fd.append("title", title.trim());
+      fd.append("videoUrl", finalVideoUrl);
+      if (description.trim()) fd.append("description", description.trim());
+      if (order.trim()) fd.append("order", String(Number(order) || 0));
+      if (poster) fd.append("poster", poster);
+
       if (editingId) await updateMovie(editingId, fd);
       else await createMovie(fd);
       toast.success(`Kino ${editingId ? "yangilandi" : "qo'shildi"}`);
@@ -115,6 +150,7 @@ const MoviesPage = () => {
       toast.error("Xatolik: " + err);
     } finally {
       setLoading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -214,7 +250,63 @@ const MoviesPage = () => {
             className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500"
             value={videoUrl}
             onChange={(e) => setVideoUrl(e.target.value)}
+            disabled={!!videoFile}
           />
+
+          {/* VIDEO FAYL — to'g'ridan Vimeo'ga yuklanadi */}
+          <div className="rounded-xl border border-dashed p-4 space-y-2">
+            <p className="text-sm text-gray-600">
+              Yoki kino faylini yuklash (Vimeo&apos;ga yuklanadi, havola
+              avtomatik olinadi)
+            </p>
+            <div className="flex items-center gap-3 flex-wrap">
+              <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2 text-sm hover:bg-gray-50">
+                <Film size={16} />
+                {videoFile ? "Boshqa fayl tanlash" : "Video fayl tanlash"}
+                <input
+                  type="file"
+                  accept="video/*"
+                  className="hidden"
+                  disabled={loading}
+                  onChange={(e) => {
+                    setVideoFile(e.target.files?.[0] || null);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+              {videoFile && (
+                <>
+                  <span className="text-sm text-gray-700 truncate max-w-[16rem]">
+                    {videoFile.name} (
+                    {(videoFile.size / 1024 / 1024).toFixed(1)} MB)
+                  </span>
+                  {!loading && (
+                    <button
+                      type="button"
+                      onClick={() => setVideoFile(null)}
+                      className="text-sm text-gray-500 hover:text-gray-800"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
+                </>
+              )}
+            </div>
+            {uploadProgress > 0 && (
+              <div>
+                <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
+                  <div
+                    className="h-full bg-amber-500 transition-all"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  Vimeo&apos;ga yuklanmoqda… {uploadProgress}% — sahifani
+                  yopmang
+                </p>
+              </div>
+            )}
+          </div>
           <textarea
             placeholder="Tavsif (ixtiyoriy)"
             className="w-full border rounded-lg px-4 py-2 resize-none focus:outline-none focus:ring-2 focus:ring-amber-500"
@@ -234,10 +326,12 @@ const MoviesPage = () => {
             className="w-full bg-amber-500 text-white py-2 rounded-lg hover:bg-amber-600 transition disabled:opacity-60"
           >
             {loading
-              ? "Saqlanmoqda..."
+              ? uploadProgress > 0
+                ? `Yuklanmoqda... ${uploadProgress}%`
+                : "Saqlanmoqda..."
               : editingId
-              ? "Kinoni yangilash"
-              : "Kino qo'shish"}
+                ? "Kinoni yangilash"
+                : "Kino qo'shish"}
           </button>
         </form>
 
