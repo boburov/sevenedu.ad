@@ -392,3 +392,6 @@ export const createQuiz = async (lessonId: string, data: QuizData) => {
 };
 
 export default api;
+
+export const setUserPassword = (id: string, password: string) =>
+  api.patch(`/admin/users/${id}/password`, { password });

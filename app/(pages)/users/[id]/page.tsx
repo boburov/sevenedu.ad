@@ -8,6 +8,7 @@ import {
   removeCourseFromUser,
   updateUserProfilePic,
   deleteUserProfilePic,
+  setUserPassword,
 } from "@/app/api/service/api";
 import { toast } from "react-toastify";
 import { useParams } from "next/navigation";
@@ -54,6 +55,8 @@ const Page = () => {
     useState<SubscriptionType>("FULL_CHARGE");
   const [userLoading, setUserLoading] = useState(true);
   const [pfpUploading, setPfpUploading] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [pwSaving, setPwSaving] = useState(false);
 
   // User ID ni olish
   const userId = decodeURIComponent(String(path.userId || path.id));
@@ -226,6 +229,20 @@ const Page = () => {
     );
   }
 
+  const submitPassword = async () => {
+    if (newPassword.length < 6) return toast.error("Parol kamida 6 belgi");
+    setPwSaving(true);
+    try {
+      await setUserPassword(userId, newPassword);
+      toast.success("Parol yangilandi");
+      setNewPassword("");
+    } catch (e) {
+      toast.error(String(e));
+    } finally {
+      setPwSaving(false);
+    }
+  };
+
   if (!user) {
     return (
       <div className="container mx-auto px-4 py-8">
@@ -254,6 +271,26 @@ const Page = () => {
             </p>
           </div>
         )}
+      </div>
+
+      <div className="max-w-md mx-auto bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+        <h3 className="text-lg font-semibold text-gray-800 mb-4">🔑 Parolni o&apos;zgartirish</h3>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            placeholder="Yangi parol (kamida 6 belgi)"
+            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+          />
+          <button
+            onClick={submitPassword}
+            disabled={pwSaving || !newPassword}
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm disabled:opacity-50"
+          >
+            Saqlash
+          </button>
+        </div>
       </div>
 
       {/* Profil rasmi (pfp) — yangisi VPS'ga yuklanadi */}
