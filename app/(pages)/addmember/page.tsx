@@ -63,14 +63,16 @@ const Page = () => {
   // === Kursga qo{'’'}shish ===
   const addUserToCourse = async (userId: string, userEmail: string) => {
     if (addLoading) return;
-    
+
     setAddLoading(userId);
     try {
       // Agar sizda kursga qo{'’'}shish uchun API bo{'’'}lsa, shu yerga qo{'’'}shing
       // Masalan: const res = await axios.post("/api/add-to-course", { userId });
-      
+
       // Hozircha alert orqali ko{'’'}rsatamiz
-      alert(`Foydalanuvchi ${userEmail} kursga qo{'’'}shildi ✅\nNote: API endpointni sozlang`);
+      alert(
+        `Foydalanuvchi ${userEmail} kursga qo{'’'}shildi ✅\nNote: API endpointni sozlang`,
+      );
       setOpenMenuId(null);
     } catch (error) {
       console.error(error);
@@ -82,7 +84,13 @@ const Page = () => {
 
   // === Foydalanuvchini o{'’'}chirish ===
   const deleteUser = async (userId: string, userEmail: string) => {
-    if (deleteLoading || !confirm(`Rostdan ham ${userEmail} foydalanuvchisini o{'’'}chirmoqchimisiz?`)) return;
+    if (
+      deleteLoading ||
+      !confirm(
+        `Rostdan ham ${userEmail} foydalanuvchisini o{'’'}chirmoqchimisiz?`,
+      )
+    )
+      return;
 
     setDeleteLoading(userId);
     try {
@@ -95,7 +103,7 @@ const Page = () => {
       });
 
       if (!res.ok) throw new Error("O{'’'}chirishda xatolik");
-      
+
       setUsers(users.filter((u) => u.id !== userId));
       alert("Foydalanuvchi o{'’'}chirildi ✅");
       setOpenMenuId(null);
@@ -107,18 +115,23 @@ const Page = () => {
     }
   };
 
-  const filteredUsers = users.filter((user) =>
-    user.email.toLowerCase().includes(search.toLowerCase()) ||
-    user.name?.toLowerCase().includes(search.toLowerCase()) ||
-    user.surname?.toLowerCase().includes(search.toLowerCase())
+  const filteredUsers = users.filter(
+    (user) =>
+      user.email.toLowerCase().includes(search.toLowerCase()) ||
+      user.name?.toLowerCase().includes(search.toLowerCase()) ||
+      user.surname?.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
     <div className="container mx-auto px-4 py-8 space-y-6 min-h-screen">
       {/* Sarlavha */}
       <div className="text-center">
-        <h1 className="text-3xl font-bold text-gray-800 mb-2">Foydalanuvchilar</h1>
-        <p className="text-gray-600">Barcha ro{'’'}yxatdan o{'’'}tgan foydalanuvchilar</p>
+        <h1 className="text-3xl font-bold text-gray-800 mb-2">
+          Foydalanuvchilar
+        </h1>
+        <p className="text-gray-600">
+          Barcha ro{"’"}yxatdan o{"’"}tgan foydalanuvchilar
+        </p>
       </div>
 
       {/* Search */}
@@ -143,79 +156,84 @@ const Page = () => {
 
       {/* User Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-        {!loading && filteredUsers.map((user) => (
-          <div
-            key={user.id}
-            className="relative group rounded-2xl border border-gray-200 bg-white shadow-md hover:shadow-xl transition-all duration-300 p-6 hover:border-blue-300"
-          >
-            {/* User Info - Clickable area */}
-            <div 
-              className="cursor-pointer"
-              onClick={() => handleUserClick(user.id)}
+        {!loading &&
+          filteredUsers.map((user) => (
+            <div
+              key={user.id}
+              className="relative group rounded-2xl border border-gray-200 bg-white shadow-md hover:shadow-xl transition-all duration-300 p-6 hover:border-blue-300"
             >
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <UserIcon className="w-5 h-5 text-blue-600" />
+              {/* User Info - Clickable area */}
+              <div
+                className="cursor-pointer"
+                onClick={() => handleUserClick(user.id)}
+              >
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                    <UserIcon className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-lg font-semibold text-gray-800 truncate">
+                      {user.name} {user.surname}
+                    </h2>
+                    <p className="text-sm text-gray-600 truncate flex items-center gap-1">
+                      <Mail className="w-3 h-3" />
+                      {user.email}
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h2 className="text-lg font-semibold text-gray-800 truncate">
-                    {user.name} {user.surname}
-                  </h2>
-                  <p className="text-sm text-gray-600 truncate flex items-center gap-1">
-                    <Mail className="w-3 h-3" />
-                    {user.email}
-                  </p>
-                </div>
+                <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-md break-all font-mono">
+                  ID: {user.id}
+                </p>
               </div>
-              <p className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-md break-all font-mono">
-                ID: {user.id}
-              </p>
-            </div>
 
-            {/* Menu Button */}
-            <div className="absolute top-4 right-4">
-              <button
-                className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  toggleMenu(user.id);
-                }}
-              >
-                <MoreHorizontal className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Dropdown Menu */}
-            {openMenuId === user.id && (
-              <div 
-                className="absolute top-12 right-2 z-50 bg-white border border-gray-200 rounded-xl shadow-lg w-48 overflow-hidden"
-                onClick={(e) => e.stopPropagation()}
-              >
+              {/* Menu Button */}
+              <div className="absolute top-4 right-4">
                 <button
-                  onClick={() => addUserToCourse(user.id, user.email)}
-                  disabled={addLoading === user.id}
-                  className="w-full p-3 hover:bg-gray-50 flex items-center gap-3 text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="text-gray-400 hover:text-gray-600 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleMenu(user.id);
+                  }}
                 >
-                  <GraduationCap className="w-4 h-4 text-green-600" />
-                  <span>
-                    {addLoading === user.id ? "Qo{'’'}shilyapti..." : "Kursga qo{'’'}shish"}
-                  </span>
-                </button>
-                
-                <button
-                  onClick={() => deleteUser(user.id, user.email)}
-                  disabled={deleteLoading === user.id}
-                  className="w-full p-3 hover:bg-gray-50 flex items-center gap-3 text-sm font-medium text-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border-t border-gray-100"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  <span>
-                    {deleteLoading === user.id ? "O{'’'}chirilmoqda..." : "O{'’'}chirish"}
-                  </span>
+                  <MoreHorizontal className="w-5 h-5" />
                 </button>
               </div>
-            )}
-          </div>
-        ))}
+
+              {/* Dropdown Menu */}
+              {openMenuId === user.id && (
+                <div
+                  className="absolute top-12 right-2 z-50 bg-white border border-gray-200 rounded-xl shadow-lg w-48 overflow-hidden"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <button
+                    onClick={() => addUserToCourse(user.id, user.email)}
+                    disabled={addLoading === user.id}
+                    className="w-full p-3 hover:bg-gray-50 flex items-center gap-3 text-sm font-medium text-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <GraduationCap className="w-4 h-4 text-green-600" />
+                    <span>
+                      {addLoading === user.id
+                        ? "Qo{'’'}shilyapti..."
+                        : "Kursga qo{'’'}shish"}
+                    </span>
+                  </button>
+
+                  <button
+                    onClick={() => deleteUser(user.id, user.email)}
+                    disabled={deleteLoading === user.id}
+                    className="w-full p-3 hover:bg-gray-50 flex items-center gap-3 text-sm font-medium text-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors border-t border-gray-100"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>
+                      {deleteLoading === user.id
+                        ? "O{'’'}chirilmoqda..."
+                        : "O{'’'}chirish"}
+                    </span>
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
       </div>
 
       {/* No Results */}
@@ -223,7 +241,9 @@ const Page = () => {
         <div className="text-center py-12">
           <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <p className="text-gray-500 text-lg">Hech narsa topilmadi</p>
-          <p className="text-gray-400 mt-2">Boshqa qidiruv so{'’'}zini kiriting</p>
+          <p className="text-gray-400 mt-2">
+            Boshqa qidiruv so{"’"}zini kiriting
+          </p>
         </div>
       )}
 
