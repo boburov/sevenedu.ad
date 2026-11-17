@@ -3,6 +3,8 @@
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
+import { API_BASE_URL } from "@/app/api/service/api";
+import { usePermissions } from "@/app/lib/permissions";
 
 interface VocabularyItem {
   id: string;
@@ -17,12 +19,17 @@ export default function DictonaryPage() {
   const [loading, setLoading] = useState(false);
   const [vocabulary, setVocabulary] = useState<VocabularyItem[]>([]);
   const [loadingVocab, setLoadingVocab] = useState(true);
+  const [editing, setEditing] = useState<VocabularyItem | null>(null);
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState("");
+  const { can } = usePermissions();
+  const canEdit = can("dictionary", "edit");
 
   // ✅ useCallback bilan o‘rab qo‘yildi
   const fetchVocabulary = useCallback(async () => {
     try {
       const res = await axios.get(
-        `https://api.sevenedu.org/dictonary/lesson/${lesson_id}`,
+        `${API_BASE_URL}/dictonary/lesson/${lesson_id}`,
         {
           headers: {
             Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -56,7 +63,7 @@ export default function DictonaryPage() {
     setLoading(true);
     try {
       const res = await axios.post(
-        `https://api.sevenedu.org/dictonary/${lesson_id}/add`,
+        `${API_BASE_URL}/dictonary/${lesson_id}/add`,
         { items: words },
         {
           headers: {
@@ -76,6 +83,42 @@ export default function DictonaryPage() {
       }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdate = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!editing || savingEdit || !canEdit) return;
+
+    const word = editing.word.trim();
+    const translated = editing.translated.trim();
+    if (!word || !translated) {
+      setEditError("So‘z va tarjimani kiriting.");
+      return;
+    }
+
+    setEditError("");
+    setSavingEdit(true);
+    try {
+      const { data } = await axios.patch<VocabularyItem>(
+        `${API_BASE_URL}/dictonary/${editing.id}`,
+        { word, translated },
+        {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("token")}`,
+          },
+        }
+      );
+      setVocabulary((items) =>
+        items.map((item) => (item.id === editing.id ? data : item))
+      );
+      setEditing(null);
+      await fetchVocabulary();
+    } catch (error) {
+      const message = axios.isAxiosError(error) && error.response?.data?.message;
+      setEditError(typeof message === "string" ? message : "So‘zni saqlab bo‘lmadi.");
+    } finally {
+      setSavingEdit(false);
     }
   };
 
@@ -167,6 +210,11 @@ export default function DictonaryPage() {
                   <th className="px-4 py-3 text-sm font-semibold border-b border-gray-700">
                     Translation
                   </th>
+                  {canEdit && (
+                    <th className="px-4 py-3 text-sm font-semibold border-b border-gray-700">
+                      Amal
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -180,12 +228,63 @@ export default function DictonaryPage() {
                     <td className="px-4 py-3 text-gray-400 border-b border-gray-700 text-center">
                       {index + 1}
                     </td>
-                    <td className="px-4 py-3 text-gray-100 border-b border-gray-700 font-medium">
-                      {item.word}
-                    </td>
-                    <td className="px-4 py-3 text-green-400 border-b border-gray-700">
-                      {item.translated}
-                    </td>
+                    {canEdit && editing?.id === item.id ? (
+                      <td colSpan={3} className="px-4 py-3 border-b border-gray-700">
+                        <form onSubmit={handleUpdate}>
+                          <fieldset disabled={savingEdit} className="flex flex-wrap items-end gap-3">
+                            <label className="flex flex-col gap-1">
+                              So‘z
+                              <input
+                                required
+                                value={editing.word}
+                                onChange={(e) => setEditing({ ...editing, word: e.target.value })}
+                                className="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2"
+                              />
+                            </label>
+                            <label className="flex flex-col gap-1">
+                              Tarjima
+                              <input
+                                required
+                                value={editing.translated}
+                                onChange={(e) => setEditing({ ...editing, translated: e.target.value })}
+                                className="rounded-lg border border-gray-700 bg-gray-900 px-3 py-2"
+                              />
+                            </label>
+                            <button type="submit" className="rounded-lg bg-green-600 px-3 py-2 text-white disabled:opacity-50">
+                              {savingEdit ? "Saqlanmoqda…" : "Saqlash"}
+                            </button>
+                            <button type="button" onClick={() => setEditing(null)} className="rounded-lg bg-gray-700 px-3 py-2 disabled:opacity-50">
+                              Bekor qilish
+                            </button>
+                          </fieldset>
+                          {editError && <p role="alert" className="mt-2 text-sm text-red-400">{editError}</p>}
+                        </form>
+                      </td>
+                    ) : (
+                      <>
+                        <td className="px-4 py-3 text-gray-100 border-b border-gray-700 font-medium">
+                          {item.word}
+                        </td>
+                        <td className="px-4 py-3 text-green-400 border-b border-gray-700">
+                          {item.translated}
+                        </td>
+                        {canEdit && (
+                          <td className="px-4 py-3 text-center border-b border-gray-700">
+                            <button
+                              type="button"
+                              disabled={editing !== null || savingEdit}
+                              onClick={() => {
+                                setEditError("");
+                                setEditing(item);
+                              }}
+                              className="rounded-lg bg-gray-700 px-3 py-2 hover:bg-gray-600 disabled:opacity-50"
+                            >
+                              Tahrirlash
+                            </button>
+                          </td>
+                        )}
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>
